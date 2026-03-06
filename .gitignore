@@ -1,0 +1,17 @@
+# Sessions contain personal interview data — don't commit by default
+data/sessions/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Mac
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
