@@ -5,34 +5,34 @@
     "last_updated": null
   },
   "subject": {
-    "name": null,
-    "preferred_name": null,
-    "date_of_birth": null,
-    "place_of_birth": null,
-    "nationality": null,
-    "current_location": null
+    "name": "Timothy Robert Jordan",
+    "preferred_name": "Tim",
+    "date_of_birth": "22 July 1965",
+    "place_of_birth": "Basildon Essex England",
+    "nationality": "British",
+    "current_location": "Florida"
   },
   "family": {
     "parents": [
       {
-        "name": null,
+        "name": "Robert Bernard Jordan",
         "relation": "father",
-        "date_of_birth": null,
-        "place_of_birth": null,
-        "occupation": null,
-        "notes": null
+        "date_of_birth": "May 14 1935",
+        "place_of_birth": "Vange, Essex, England",
+        "occupation": "Store Keeper",
+        "notes": "Died 20th June 2025"
       },
       {
-        "name": null,
+        "name": "June Beryl Jordan",
         "relation": "mother",
-        "date_of_birth": null,
-        "place_of_birth": null,
-        "occupation": null,
-        "notes": null
+        "date_of_birth": "August 14th 1932",
+        "place_of_birth": "East London, possibly Kent",
+        "occupation": "Seamstress, home maker",
+        "notes": "Died June 2022"
       }
     ],
     "siblings": [],
-    "spouse_or_partner": null,
+    "spouse_or_partner": "Wife: Joanna Salapska-Gelleri",
     "children": []
   },
   "places": [
@@ -45,16 +45,16 @@
   ],
   "education": [
     {
-      "institution": null,
-      "qualification": null,
+      "institution": "University of Leeds",
+      "qualification": "Honours degree in electrical and electronic engineering",
       "field": null,
-      "years": null,
+      "years": "1983 through 1986",
       "notes": null
     }
   ],
   "career": [
     {
-      "employer": null,
+      "employer": "Self employed",
       "role": null,
       "years": null,
       "notes": null
