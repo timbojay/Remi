@@ -14,7 +14,7 @@ class ChatViewModel {
     var conversations: [ConversationSummary] = []
     var selectedConversationId: String?
 
-    var avatarState: BiographerAvatarState {
+    var avatarState: RemiAvatarState {
         if isWaitingForResponse { return .thinking }
         if isStreaming { return .writing }
         return .idle
@@ -105,7 +105,7 @@ class ChatViewModel {
             } catch {
                 await MainActor.run {
                     if let idx = messages.firstIndex(where: { $0.id == assistantId }) {
-                        messages[idx].content = "Sorry, I couldn't connect to the backend. Make sure the Biographer server is running."
+                        messages[idx].content = "Sorry, I couldn't connect to the backend. Make sure the Remi server is running."
                     }
                 }
             }

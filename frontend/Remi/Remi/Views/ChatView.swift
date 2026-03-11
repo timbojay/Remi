@@ -7,11 +7,11 @@ struct ChatView: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                BiographerAvatar(state: viewModel.avatarState)
+                RemiAvatar(state: viewModel.avatarState)
                     .scaleEffect(0.6)
                     .frame(width: 42, height: 42)
 
-                Text("Biographer")
+                Text("Remi")
                     .font(.title2)
                     .fontWeight(.semibold)
                 Spacer()
@@ -33,7 +33,7 @@ struct ChatView: View {
             ZStack {
                 if viewModel.messages.isEmpty {
                     VStack(spacing: 16) {
-                        BiographerAvatar(state: viewModel.isLoadingGreeting ? .thinking : .idle)
+                        RemiAvatar(state: viewModel.isLoadingGreeting ? .thinking : .idle)
 
                         if viewModel.isLoadingGreeting {
                             ProgressView()

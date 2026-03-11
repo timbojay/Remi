@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - Avatar State
 
-enum BiographerAvatarState {
+enum RemiAvatarState {
     case idle      // Gentle breathing, eyes forward
     case thinking  // Eyes look up, thought bubbles
     case writing   // Eyes look down, typing bounce
@@ -66,8 +66,8 @@ struct SpikesShape: Shape {
 
 // MARK: - Main Avatar View
 
-struct BiographerAvatar: View {
-    let state: BiographerAvatarState
+struct RemiAvatar: View {
+    let state: RemiAvatarState
 
     @State private var breathe = false
     @State private var writingBounce = false
@@ -271,15 +271,15 @@ struct BiographerAvatar: View {
 #Preview("Avatar States") {
     HStack(spacing: 40) {
         VStack {
-            BiographerAvatar(state: .idle)
+            RemiAvatar(state: .idle)
             Text("Idle").font(.caption)
         }
         VStack {
-            BiographerAvatar(state: .thinking)
+            RemiAvatar(state: .thinking)
             Text("Thinking").font(.caption)
         }
         VStack {
-            BiographerAvatar(state: .writing)
+            RemiAvatar(state: .writing)
             Text("Writing").font(.caption)
         }
     }

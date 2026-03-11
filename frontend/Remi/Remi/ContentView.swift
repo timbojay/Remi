@@ -90,7 +90,7 @@ struct ContentView: View {
                 }
             }
             .listStyle(.sidebar)
-            .navigationTitle("Biographer")
+            .navigationTitle("Remi")
             #if os(macOS)
             .navigationSplitViewColumnWidth(min: 200, ideal: 250)
             #endif

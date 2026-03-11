@@ -11,7 +11,7 @@ struct MessageBubble: View {
 
             VStack(alignment: isUser ? .trailing : .leading, spacing: 4) {
                 if !isUser {
-                    Text("Biographer")
+                    Text("Remi")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
