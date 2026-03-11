@@ -1,44 +1,107 @@
 """
-rag.py — RAG retrieval: given a conversation turn, fetch relevant biography facts.
+rag.py — Enhanced RAG retrieval using the FamilyTree graph model.
+
+Replaces the old keyword-matching RAG with graph-aware context fetching.
+The FamilyTree is used directly (same process) for efficiency.
+For external clients, use the MCP server instead.
 """
 
-from remi.biography import load, detect_topics, get_sections, format_for_prompt
+from remi.family_tree import FamilyTree, BIOGRAPHY_FILE
+
+# Topic detection keywords (carried over from v1, used for focused retrieval)
+TOPIC_KEYWORDS = {
+    "family": ["family", "parent", "mother", "father", "sibling", "brother", "sister",
+               "spouse", "partner", "wife", "husband", "child", "children", "son",
+               "daughter", "grandparent", "grandmother", "grandfather", "relative",
+               "cousin", "uncle", "aunt", "married", "wedding"],
+    "places": ["place", "live", "lived", "born", "grew up", "moved", "home", "city",
+               "town", "country", "location", "where", "travel"],
+    "education": ["school", "university", "college", "study", "studied", "degree",
+                  "qualification", "graduate", "education", "learn", "course", "teacher"],
+    "career": ["work", "job", "career", "employer", "company", "role", "profession",
+               "occupation", "business", "employed", "retire", "salary", "boss"],
+    "milestones": ["milestone", "important", "significant", "event", "happened", "memory",
+                   "moment", "landmark", "turning point", "first time", "achievement",
+                   "remember", "big moment"],
+    "interests": ["hobby", "interest", "enjoy", "passion", "like", "love", "sport",
+                  "music", "book", "film", "travel", "pastime", "fun"],
+    "memories": ["remember", "story", "anecdote", "tell me about", "what was it like",
+                 "describe", "recall", "once upon"],
+}
 
 
-def retrieve(query: str) -> str:
+def _detect_topics(text: str) -> list[str]:
+    """Detect which topics are relevant to a piece of text."""
+    text_lower = text.lower()
+    matched = []
+    for topic, keywords in TOPIC_KEYWORDS.items():
+        if any(kw in text_lower for kw in keywords):
+            matched.append(topic)
+    return matched if matched else None  # None = include everything
+
+
+def _detect_person(text: str, tree: FamilyTree) -> str | None:
+    """Try to detect if the text mentions a specific person in the tree."""
+    text_lower = text.lower()
+    for pid, person in tree.data["people"].items():
+        name = (person.get("name") or "").lower()
+        preferred = (person.get("preferred_name") or "").lower()
+        # Check if a name appears in the text
+        if (name and len(name) > 2 and name in text_lower) or \
+           (preferred and len(preferred) > 2 and preferred in text_lower):
+            return pid
+    return None
+
+
+def retrieve(query: str, tree: FamilyTree = None) -> str:
     """
-    Given an interview question or conversational turn, retrieve and format
-    the relevant biographical facts to inject into the prompt.
+    Given a conversational turn, retrieve relevant biographical context.
 
-    Returns a formatted string ready for prompt injection (empty string if nothing relevant).
+    Returns a formatted string ready for prompt injection.
     """
-    try:
-        bio = load()
-    except FileNotFoundError:
+    if tree is None:
+        try:
+            tree = FamilyTree()
+        except (FileNotFoundError, ValueError):
+            return ""
+
+    topics = _detect_topics(query)
+    person_id = _detect_person(query, tree)
+
+    # Default to the subject
+    if person_id is None:
+        person_id = tree.data["_meta"].get("subject_id")
+
+    if not person_id:
         return ""
 
-    subject_name = bio.get("subject", {}).get("preferred_name") or \
-                   bio.get("subject", {}).get("name") or "the subject"
-
-    topics = detect_topics(query)
-    sections = get_sections(topics, bio)
-
-    # Always include subject basics
-    if "subject" not in sections and bio.get("subject"):
-        sections["subject"] = bio["subject"]
-
-    return format_for_prompt(sections, subject_name)
+    return tree.format_context(person_id, topics)
 
 
-def retrieve_all() -> str:
-    """Retrieve and format the full biography (for session start injection)."""
-    try:
-        bio = load()
-    except FileNotFoundError:
+def retrieve_all(tree: FamilyTree = None) -> str:
+    """Retrieve the full biography context for session start."""
+    if tree is None:
+        try:
+            tree = FamilyTree()
+        except (FileNotFoundError, ValueError):
+            return ""
+
+    subject_id = tree.data["_meta"].get("subject_id")
+    if not subject_id:
         return ""
 
-    subject_name = bio.get("subject", {}).get("preferred_name") or \
-                   bio.get("subject", {}).get("name") or "the subject"
+    # Full context for the subject (no topic filter)
+    context = tree.format_context(subject_id)
 
-    all_sections = {k: v for k, v in bio.items() if k not in ("_meta",) and v}
-    return format_for_prompt(all_sections, subject_name)
+    # Also append a brief family tree overview
+    people = tree.list_people()
+    if len(people) > 1:
+        context += "\n\n[FAMILY TREE OVERVIEW]\n"
+        context += f"  Total people recorded: {len(people)}\n"
+        context += f"  Total relationships: {len(tree.data.get('relationships', []))}\n"
+        for p in people:
+            marker = " ← subject" if p["id"] == subject_id else ""
+            name = p.get("preferred_name") or p.get("name") or p["id"]
+            context += f"  • {name} (id: {p['id']}){marker}\n"
+
+    return context

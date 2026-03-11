@@ -1,0 +1,72 @@
+{
+  "_meta": {
+    "version": "1.0",
+    "description": "Ground truth biographical facts for Remi. Fill in what you know — leave unknown fields as null.",
+    "last_updated": null
+  },
+  "subject": {
+    "name": null,
+    "preferred_name": null,
+    "date_of_birth": null,
+    "place_of_birth": null,
+    "nationality": null,
+    "current_location": null
+  },
+  "family": {
+    "parents": [
+      {
+        "name": null,
+        "relation": "father",
+        "date_of_birth": null,
+        "place_of_birth": null,
+        "occupation": null,
+        "notes": null
+      },
+      {
+        "name": null,
+        "relation": "mother",
+        "date_of_birth": null,
+        "place_of_birth": null,
+        "occupation": null,
+        "notes": null
+      }
+    ],
+    "siblings": [],
+    "spouse_or_partner": null,
+    "children": []
+  },
+  "places": [
+    {
+      "location": null,
+      "type": "birthplace|childhood|education|work|current",
+      "years": null,
+      "notes": null
+    }
+  ],
+  "education": [
+    {
+      "institution": null,
+      "qualification": null,
+      "field": null,
+      "years": null,
+      "notes": null
+    }
+  ],
+  "career": [
+    {
+      "employer": null,
+      "role": null,
+      "years": null,
+      "notes": null
+    }
+  ],
+  "milestones": [
+    {
+      "year": null,
+      "event": null,
+      "notes": null
+    }
+  ],
+  "interests": [],
+  "additional_notes": null
+}
