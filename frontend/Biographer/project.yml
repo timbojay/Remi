@@ -1,0 +1,27 @@
+name: Biographer
+options:
+  bundleIdPrefix: com.biographer
+  deploymentTarget:
+    macOS: "14.0"
+    iOS: "17.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+targets:
+  Biographer:
+    type: application
+    platform: [macOS, iOS]
+    sources:
+      - path: Biographer
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.biographer.app
+        INFOPLIST_KEY_CFBundleDisplayName: Biographer
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: 1
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_NSLocalNetworkUsageDescription: "Biographer connects to a local AI backend running on your machine."
+        CODE_SIGN_ENTITLEMENTS: Biographer/Biographer.entitlements
+      configs:
+        Debug:
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG

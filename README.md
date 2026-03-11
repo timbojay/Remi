@@ -1,116 +1,166 @@
-# Remi — Personal Biography Assistant
+# Remi 🧠
 
-Remi is a local, private biography assistant that knows you. It stores your ground truth biographical facts in a **family tree graph** and uses them during interview sessions — so you never have to re-explain your life every time you sit down to talk.
+A personal biographical AI — your life story, always within reach.
 
-## How It Works
+Remi combines a conversational LangGraph agent, a structured knowledge graph, and an MCP server so your biography is accessible from any AI tool that supports the Model Context Protocol.
 
-1. **You fill in your facts** — `data/biography.json` holds your family tree (people, relationships, life events)
-2. **Remi retrieves what's relevant** — before each interview turn, the graph-aware RAG pulls the right context
-3. **You go deeper** — Remi uses your facts as a foundation and interviews you for texture, detail, and the things that aren't written down yet
-4. **Sessions are saved** — every interview is stored in `data/sessions/` so Remi can pick up where you left off
+---
+
+## What Remi Does
+
+- **Chats with you** to discover your life story, one conversation at a time
+- **Extracts and stores** facts, people, places, and relationships automatically
+- **Tracks coverage** — knows what areas of your life are well documented vs. unexplored
+- **Generates prose biographies** from accumulated facts on demand
+- **Exposes everything via MCP** — Claude Desktop, Cursor, VS Code Copilot, and more can read and write your biography
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│                   Frontend (Swift/iOS)               │
+│  Chat · Biography · Family Tree · Timeline · People │
+└───────────────────┬─────────────────────────────────┘
+                    │ REST API
+┌───────────────────▼─────────────────────────────────┐
+│              Backend (FastAPI + LangGraph)           │
+│                                                     │
+│  Agent Pipeline:                                    │
+│  RECEIVE → CLASSIFY → STRATEGIZE → RESPOND          │
+│                    ↓                                │
+│             EXTRACT → FINALIZE                      │
+│                                                     │
+│  Services: biography_generator · export · LLM       │
+│  DB: SQLite knowledge graph (facts, entities,       │
+│      relationships, coverage, provenance)           │
+└───────────────────┬─────────────────────────────────┘
+                    │ direct DB access
+┌───────────────────▼─────────────────────────────────┐
+│              MCP Server (FastMCP)                   │
+│  Tools: get_biography_summary · get_facts ·         │
+│         search_facts · get_entities · get_family_   │
+│         tree · add_fact · add_entity · add_         │
+│         relationship · get_coverage_gaps · ...      │
+└─────────────────────────────────────────────────────┘
+```
+
+---
 
 ## Quick Start
 
+### 1. Install dependencies
+
 ```bash
-# 1. Install dependencies
-pip install "mcp[cli]"
-
-# For MLX (Apple Silicon):
-pip install mlx-lm
-
-# For Ollama (any platform):
-# Install from https://ollama.ai, then: ollama pull qwen3:8b
-
-# 2. Start an interview (MLX)
-python scripts/interview.py --quality
-
-# 2b. Start an interview (Ollama)
-python scripts/interview.py --ollama
-
-# 3. Focus on a specific topic
-python scripts/interview.py --ollama --topic family
-
-# 4. Resume a previous session
-python scripts/interview.py --ollama --resume data/sessions/session_20260101_120000.json
+pip install -r requirements.txt
 ```
 
-## MCP Server
-
-Remi includes an MCP server that lets any MCP client (Claude Desktop, Cursor, VS Code) query and update the family tree.
+### 2. Configure environment
 
 ```bash
-# Start the MCP server
-python mcp_server/server.py
+cp .env.example .env
+# Edit .env and add your ANTHROPIC_API_KEY and USER_NAME
+```
 
-# Or with HTTP transport
+### 3. (Optional) Migrate existing biography.json
+
+If you have data in `data/biography.json`, seed the database:
+
+```bash
+python scripts/migrate_json_to_db.py
+```
+
+### 4. Start the backend
+
+```bash
+cd backend
+python run.py
+# API available at http://127.0.0.1:8001
+```
+
+### 5. Run the MCP server
+
+```bash
+python mcp_server/server.py
+# Or with SSE transport:
 python mcp_server/server.py --transport sse --port 8000
 ```
 
-See [docs/mcp-setup.md](docs/mcp-setup.md) for full setup instructions.
+---
+
+## MCP Setup (Claude Desktop)
+
+Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "remi": {
+      "command": "python",
+      "args": ["/path/to/Remi/mcp_server/server.py"],
+      "env": {
+        "DB_PATH": "/path/to/Remi/backend/data/remi.db"
+      }
+    }
+  }
+}
+```
+
+See `docs/mcp-setup.md` for full setup instructions.
+
+---
 
 ## Project Structure
 
 ```
 Remi/
-├── data/
-│   ├── biography.json       ← Your family tree (v2 graph format)
-│   ├── biography_v1_backup.json  ← Backup of v1 format
-│   └── sessions/            ← Auto-saved interview sessions
-├── mcp_server/
-│   ├── server.py            ← MCP server (for external clients)
+├── backend/                # FastAPI backend + LangGraph agent
+│   ├── app/
+│   │   ├── agent/          # LangGraph nodes (receive, classify, respond, extract…)
+│   │   ├── db/             # SQLite knowledge graph + vector store
+│   │   ├── routers/        # FastAPI routes (chat, biography, knowledge, status)
+│   │   └── services/       # biography_generator, export_engine, LLM, maintenance
+│   ├── requirements.txt
+│   └── run.py
+├── frontend/               # Swift/iOS app
+│   └── Biographer/         # Xcode project
+├── mcp_server/             # MCP server (reads/writes SQLite knowledge graph)
+│   ├── server.py
 │   └── requirements.txt
-├── remi/
-│   ├── family_tree.py       ← Core graph model + persistence
-│   ├── biography.py         ← Convenience wrappers
-│   └── rag.py               ← Graph-aware RAG retrieval
 ├── scripts/
-│   ├── interview.py         ← Main interview script
-│   └── migrate_v1_to_v2.py  ← v1 → v2 migration
-├── prompts/
-│   └── system.md            ← Remi's personality and instructions
-└── docs/
-    └── mcp-setup.md         ← MCP setup guide
+│   ├── interview.py        # CLI interview tool
+│   ├── migrate_json_to_db.py  # Migrate biography.json → SQLite
+│   └── migrate_v1_to_v2.py   # Migrate v1 → v2 JSON format
+├── data/
+│   └── biography.json      # Legacy JSON (still used by CLI tools)
+├── docs/
+│   └── mcp-setup.md        # MCP setup guide
+├── .env.example
+└── requirements.txt
 ```
 
-## Models
+---
 
-| Flag | Model | Notes |
-|------|-------|-------|
-| *(default)* | `mlx-community/Llama-3.2-3B-Instruct-4bit` | Fast, lighter (MLX) |
-| `--quality` | `mlx-community/Qwen2.5-7B-Instruct-4bit` | Better reasoning (MLX) |
-| `--ollama` | `qwen3:8b` | Ollama backend (any platform) |
-| `--model <name>` | Any compatible model | Custom model |
+## Environment Variables
 
-## Family Tree Format (v2)
+| Variable | Default | Description |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | — | Required for the LangGraph agent |
+| `USER_NAME` | `Tim` | Name used in biography prompts |
+| `MODEL_NAME` | `claude-sonnet-4-20250514` | Claude model to use |
+| `DB_PATH` | `backend/data/remi.db` | SQLite database path |
 
-The family tree is a graph: **people are nodes, relationships are edges.**
+---
 
-```json
-{
-  "_meta": { "version": "2.0", "subject_id": "tim-jordan" },
-  "people": {
-    "tim-jordan": {
-      "id": "tim-jordan",
-      "name": "Timothy Jordan",
-      "preferred_name": "Tim",
-      "date_of_birth": "1985-06-12",
-      "place_of_birth": "Manchester, England"
-    }
-  },
-  "relationships": [
-    { "person_id": "tim-jordan", "relative_id": "john-jordan", "type": "father" }
-  ]
-}
-```
+## iOS Frontend
 
-Edit `data/biography.json` or use the MCP tools to build your tree. Leave fields as `null` if unknown — Remi will discover them through interviews.
+The Swift app (in `frontend/`) connects to the backend API and provides:
+- **Chat** — conversational interview interface
+- **Biography** — generated prose biography
+- **Family Tree** — visual family graph
+- **Timeline** — chronological life events
+- **People** — all known entities
+- **Coverage** — visual life domain coverage
 
-## Migrating from v1
-
-```bash
-python scripts/migrate_v1_to_v2.py
-```
-
-## Privacy
-
-Everything runs locally. No data leaves your machine. Your biography file and sessions are yours alone.
+Open `frontend/Biographer/project.yml` with [XcodeGen](https://github.com/yonaskolb/XcodeGen) to generate the Xcode project.

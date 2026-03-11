@@ -1,0 +1,15 @@
+# Remi — full requirements
+# Install with: pip install -r requirements.txt
+
+# Backend (FastAPI + LangGraph agent)
+fastapi>=0.115.0
+uvicorn[standard]>=0.34.0
+aiosqlite>=0.20.0
+langgraph>=0.2.60
+langchain-anthropic>=0.3.12
+langchain-core>=0.3.53
+chromadb>=0.5.0
+python-dotenv>=1.0.0
+
+# MCP server
+mcp[cli]>=1.2.0

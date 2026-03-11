@@ -1,2 +1,6 @@
 # MCP server dependencies
 mcp[cli]>=1.2.0
+
+# Backend dependencies (shared with FastAPI backend)
+aiosqlite>=0.20.0
+python-dotenv>=1.0.0

@@ -1,0 +1,30 @@
+from app.agent.state import BiographerState
+from app.agent.prompts import build_system_prompt
+from app.config import settings
+from langchain_anthropic import ChatAnthropic
+from langchain_core.messages import SystemMessage
+
+
+async def respond(state: BiographerState) -> dict:
+    """Generate the biographical response using Claude.
+
+    Note: For streaming, the chat router invokes the LLM directly
+    with a streaming callback. This node is used for non-streaming
+    fallback and testing.
+    """
+    user_name = state.get("user_name", settings.USER_NAME)
+    system_prompt = build_system_prompt(user_name)
+
+    llm = ChatAnthropic(
+        model=settings.MODEL_NAME,
+        api_key=settings.ANTHROPIC_API_KEY,
+        max_tokens=1024,
+    )
+
+    messages = [SystemMessage(content=system_prompt)] + state["messages"]
+    response = await llm.ainvoke(messages)
+
+    return {
+        "messages": [response],
+        "response_content": response.content,
+    }
