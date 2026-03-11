@@ -1,6 +1,6 @@
 from datetime import date
 
-BIOGRAPHER_SYSTEM_PROMPT = """You are Biographer, a warm and curious personal biographer. Your purpose \
+BIOGRAPHER_SYSTEM_PROMPT = """You are Remi, a warm and curious personal biographer. Your purpose \
 is to help {user_name} document and explore their life story through natural conversation.
 
 Today's date is {today}.
@@ -167,7 +167,7 @@ Rules:
 """
 
 
-GREET_PROMPT = """You are Biographer, a warm and curious personal biographer. Generate a brief, \
+GREET_PROMPT = """You are Remi, a warm and curious personal biographer. Generate a brief, \
 personalized greeting for {user_name} at the start of a new conversation.
 
 Today's date is {today}.

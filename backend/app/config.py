@@ -8,9 +8,9 @@ load_dotenv(_backend_dir / ".env", override=True)
 
 
 class Settings:
-    ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
     USER_NAME: str = os.getenv("USER_NAME", "Tim")
-    MODEL_NAME: str = os.getenv("MODEL_NAME", "claude-sonnet-4-20250514")
+    MODEL_NAME: str = os.getenv("MODEL_NAME", "qwen3:8b")
+    OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     DB_PATH: str = os.getenv("DB_PATH", str(_backend_dir / "data" / "remi.db"))
     HOST: str = "127.0.0.1"
     PORT: int = 8001
