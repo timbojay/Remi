@@ -89,18 +89,18 @@ async def chat_stream(request: ChatRequest):
     t1 = time.time()
     print(f"[timing] RECEIVE: {t1-t0:.2f}s")
 
-    # -- CLASSIFY + STRATEGIZE: run in parallel --
-    # CLASSIFY is independent (just looks at user message)
-    # STRATEGIZE loads biography context and decides approach
-    # We run both concurrently to reduce pre-stream latency
-    classify_task = asyncio.create_task(classify(state))
-    strategize_task = asyncio.create_task(strategize(state))
-
-    classify_result, strategy_result = await asyncio.gather(classify_task, strategize_task)
+    # -- CLASSIFY (instant, rule-based) then STRATEGIZE --
+    # Classify runs first (microseconds — no LLM call) so strategize gets the
+    # correct intent + mood and can choose the right conversational strategy.
+    classify_result = await classify(state)
     state.update(classify_result)
+    t1b = time.time()
+    print(f"[timing] CLASSIFY: {t1b-t1:.4f}s (rule-based)")
+
+    strategy_result = await strategize(state)
     state.update(strategy_result)
     t2 = time.time()
-    print(f"[timing] CLASSIFY+STRATEGIZE (parallel): {t2-t1:.2f}s")
+    print(f"[timing] STRATEGIZE: {t2-t1b:.2f}s")
 
     # -- CORRECT: if user is correcting data, fix it before responding --
     if state.get("is_correction"):
