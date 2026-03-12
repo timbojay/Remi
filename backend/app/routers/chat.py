@@ -126,7 +126,7 @@ async def chat_stream(request: ChatRequest):
         collected_content = []
 
         # -- RESPOND (streaming) --
-        llm = get_streaming_llm(max_tokens=1024)
+        llm = get_streaming_llm(max_tokens=200)
 
         messages_for_llm = [SystemMessage(content=system_prompt)] + llm_messages
 
