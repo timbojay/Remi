@@ -19,6 +19,7 @@ async def respond(state: BiographerState) -> dict:
         model=settings.MODEL_NAME,
         base_url=settings.OLLAMA_BASE_URL,
         num_predict=1024,
+        options={"think": False},
     )
 
     messages = [SystemMessage(content=system_prompt)] + state["messages"]

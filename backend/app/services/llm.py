@@ -67,6 +67,10 @@ async def invoke_with_retry(
         model=settings.MODEL_NAME,
         base_url=settings.OLLAMA_BASE_URL,
         num_predict=max_tokens,
+        # Disable thinking mode for qwen3 and other reasoning models.
+        # Thinking tokens waste time and LangChain leaves content empty when
+        # the model generates only chain-of-thought with no post-think response.
+        options={"think": False},
     )
 
     last_error = None
@@ -109,4 +113,5 @@ def get_streaming_llm(**kwargs) -> ChatOllama:
         model=settings.MODEL_NAME,
         base_url=settings.OLLAMA_BASE_URL,
         num_predict=kwargs.get("max_tokens", 1024),
+        options={"think": False},
     )
