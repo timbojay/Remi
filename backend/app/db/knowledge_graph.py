@@ -632,6 +632,28 @@ async def get_unnamed_people() -> list[dict]:
     return unnamed
 
 
+async def increment_entity_mention(entity_id: str) -> None:
+    """Increment mention_count and update last_mentioned_at for an entity."""
+    db = await get_db()
+    now = _now()
+    await db.execute(
+        "UPDATE entities SET mention_count = mention_count + 1, last_mentioned_at = ?, updated_at = ? WHERE id = ?",
+        (now, now, entity_id),
+    )
+    await db.commit()
+
+
+async def increment_fact_mention(fact_id: str) -> None:
+    """Increment mention_count for a fact (it's been confirmed again)."""
+    db = await get_db()
+    now = _now()
+    await db.execute(
+        "UPDATE facts SET mention_count = mention_count + 1, updated_at = ? WHERE id = ?",
+        (now, fact_id),
+    )
+    await db.commit()
+
+
 async def find_unnamed_entity_by_role(family_role: str) -> dict | None:
     """Find a person entity stored under a role label (name_known=false) by family_role column.
 

@@ -5,6 +5,21 @@ import uuid
 from datetime import datetime, timezone
 
 
+def _make_title(text: str, max_len: int = 60) -> str:
+    """Generate a conversation title from the first user message."""
+    text = " ".join(text.strip().split())  # normalise whitespace
+    if not text:
+        return "New conversation"
+    if len(text) <= max_len:
+        return text
+    # Truncate at last word boundary
+    truncated = text[:max_len]
+    last_space = truncated.rfind(" ")
+    if last_space > max_len // 2:
+        truncated = truncated[:last_space]
+    return truncated + "…"
+
+
 async def finalize(state: BiographerState) -> dict:
     """Persist the conversation turn to the database."""
     db = await get_db()
@@ -12,15 +27,28 @@ async def finalize(state: BiographerState) -> dict:
     messages = state.get("messages", [])
     now = datetime.now(timezone.utc).isoformat()
 
-    # Ensure conversation exists
+    # Ensure conversation exists — generate a title from the first user message
     existing = await db.execute(
-        "SELECT id FROM conversations WHERE id = ?", (conversation_id,)
+        "SELECT id, title FROM conversations WHERE id = ?", (conversation_id,)
     )
-    if not await existing.fetchone():
+    existing_row = await existing.fetchone()
+    if not existing_row:
+        # New conversation — title from first user message
+        first_user_text = ""
+        for msg in messages:
+            if hasattr(msg, "type") and msg.type == "human":
+                first_user_text = msg.content if isinstance(msg.content, str) else str(msg.content)
+                break
+            # LangChain HumanMessage doesn't always have .type; check class name
+            if msg.__class__.__name__ == "HumanMessage":
+                first_user_text = msg.content if isinstance(msg.content, str) else str(msg.content)
+                break
+        title = _make_title(first_user_text)
         await db.execute(
-            "INSERT INTO conversations (id, created_at, updated_at) VALUES (?, ?, ?)",
-            (conversation_id, now, now),
+            "INSERT INTO conversations (id, title, created_at, updated_at) VALUES (?, ?, ?, ?)",
+            (conversation_id, title, now, now),
         )
+        print(f"[finalize] Created conversation: '{title}'")
 
     # Find the last user message and last assistant message to save
     from langchain_core.messages import HumanMessage, AIMessage

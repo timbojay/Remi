@@ -77,8 +77,11 @@ async def extract(state: BiographerState) -> dict:
         # Check if this exact name already exists
         existing = await kg.search_entities(name)
         if existing:
-            entity_id_map[name.lower()] = existing[0]["id"]
-            print(f"[extract] Entity '{name}' already exists [{existing[0]['id'][:8]}]")
+            eid = existing[0]["id"]
+            entity_id_map[name.lower()] = eid
+            # Increment mention count — tracks how often this person comes up
+            await kg.increment_entity_mention(eid)
+            print(f"[extract] Entity '{name}' re-mentioned [{eid[:8]}]")
             continue
 
         # If we now know a real name, look for an unnamed placeholder to upgrade.
@@ -138,16 +141,23 @@ async def extract(state: BiographerState) -> dict:
         for ef in existing_facts:
             if ef["value"].lower() == value.lower():
                 is_duplicate = True
-                print(f"[extract] Fact already exists: {value[:60]}")
+                # Increment mention count — this fact has been confirmed again
+                await kg.increment_fact_mention(ef["id"])
+                print(f"[extract] Fact re-confirmed (mention++): {value[:60]}")
                 break
         if is_duplicate:
             continue
 
-        # Resolve subject entity reference
+        # Resolve subject entity — check map first, then fall back to DB
         subject_entity_id = None
         subject_ref = fact.get("subject", "")
-        if subject_ref and subject_ref.lower() in entity_id_map:
-            subject_entity_id = entity_id_map[subject_ref.lower()]
+        if subject_ref:
+            subject_entity_id = entity_id_map.get(subject_ref.lower())
+            if not subject_entity_id:
+                hits = await kg.search_entities(subject_ref)
+                if hits:
+                    subject_entity_id = hits[0]["id"]
+                    entity_id_map[subject_ref.lower()] = subject_entity_id
 
         result = await kg.add_fact(
             value=value,
@@ -164,6 +174,10 @@ async def extract(state: BiographerState) -> dict:
         print(f"[extract] Created fact: {value[:60]} [{result['id'][:8]}]")
 
     # Persist relationships
+    # entity_id_map only contains entities from THIS extraction run.
+    # For cross-session relationships (e.g. Beryl introduced session 1,
+    # her mother Elizabeth in session 3), we fall back to a DB name lookup
+    # so the family graph doesn't silently drop inter-session edges.
     relationships = data.get("relationships", [])
     for rel in relationships:
         from_name = rel.get("from", "")
@@ -172,6 +186,21 @@ async def extract(state: BiographerState) -> dict:
 
         from_id = entity_id_map.get(from_name.lower())
         to_id = entity_id_map.get(to_name.lower())
+
+        # Cross-session fallback: look up by name in the DB
+        if not from_id and from_name:
+            hits = await kg.search_entities(from_name, entity_type="person")
+            if hits:
+                from_id = hits[0]["id"]
+                entity_id_map[from_name.lower()] = from_id
+                print(f"[extract] Resolved '{from_name}' from DB for relationship [{from_id[:8]}]")
+
+        if not to_id and to_name:
+            hits = await kg.search_entities(to_name, entity_type="person")
+            if hits:
+                to_id = hits[0]["id"]
+                entity_id_map[to_name.lower()] = to_id
+                print(f"[extract] Resolved '{to_name}' from DB for relationship [{to_id[:8]}]")
 
         if from_id and to_id:
             result = await kg.add_relationship(
@@ -187,7 +216,7 @@ async def extract(state: BiographerState) -> dict:
             else:
                 print(f"[extract] Created relationship: {from_name} --{rel_type}--> {to_name}")
         else:
-            print(f"[extract] Skipped relationship {from_name}→{to_name}: entity IDs not found")
+            print(f"[extract] Skipped relationship {from_name}→{to_name}: could not resolve entity IDs")
 
     return {}
 
