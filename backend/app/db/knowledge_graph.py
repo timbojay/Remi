@@ -14,6 +14,18 @@ def _id() -> str:
     return str(uuid.uuid4())
 
 
+# ─── BIOGRAPHY SUMMARY CACHE ─────────────────────────────────────────
+# Invalidated whenever facts or entities are added/updated/deleted.
+# Avoids re-fetching all rows from SQLite on every conversation turn.
+
+_summary_cache: dict = {"text": None, "dirty": True}
+
+
+def _invalidate_summary_cache() -> None:
+    """Mark the summary cache as stale. Called on any write operation."""
+    _summary_cache["dirty"] = True
+
+
 # ─── FACTS ───────────────────────────────────────────────────────────
 
 async def _resolve_entity_id(db, short_id: str) -> str | None:
@@ -72,6 +84,7 @@ async def add_fact(
 
     await db.commit()
     await _update_coverage(category)
+    _invalidate_summary_cache()
 
     return {"id": fact_id, "value": value, "category": category}
 
@@ -168,6 +181,7 @@ async def update_fact(
         f"UPDATE facts SET {', '.join(updates)} WHERE id = ?", params
     )
     await db.commit()
+    _invalidate_summary_cache()
     return {"id": fact_id, "updated": True}
 
 
@@ -178,6 +192,7 @@ async def delete_fact(fact_id: str, reason: str) -> dict:
         (reason, _now(), fact_id),
     )
     await db.commit()
+    _invalidate_summary_cache()
     return {"id": fact_id, "suppressed": True, "reason": reason}
 
 
@@ -214,6 +229,7 @@ async def add_entity(
         )
 
     await db.commit()
+    _invalidate_summary_cache()
     return {"id": entity_id, "name": name, "entity_type": entity_type}
 
 
@@ -305,6 +321,7 @@ async def update_entity(
         f"UPDATE entities SET {', '.join(updates)} WHERE id = ?", params
     )
     await db.commit()
+    _invalidate_summary_cache()
     return {"id": entity_id, "updated": True}
 
 
@@ -315,6 +332,7 @@ async def delete_entity(entity_id: str, reason: str) -> dict:
         (_now(), entity_id),
     )
     await db.commit()
+    _invalidate_summary_cache()
     return {"id": entity_id, "suppressed": True, "reason": reason}
 
 
@@ -532,12 +550,21 @@ async def get_coverage_gaps() -> list[dict]:
 # ─── BIOGRAPHY SUMMARY ──────────────────────────────────────────────
 
 async def get_biography_summary() -> str:
-    """Build a compressed text summary of all known facts, grouped by category."""
+    """Build a compressed text summary of all known facts, grouped by category.
+
+    Result is cached in memory and only rebuilt when facts/entities change.
+    """
+    if not _summary_cache["dirty"] and _summary_cache["text"] is not None:
+        return _summary_cache["text"]
+
     facts = await get_all_facts()
     entities = await get_all_entities()
 
     if not facts and not entities:
-        return "No biographical information recorded yet."
+        result = "No biographical information recorded yet."
+        _summary_cache["text"] = result
+        _summary_cache["dirty"] = False
+        return result
 
     # Group facts by category
     by_cat: dict[str, list[str]] = {}
@@ -551,17 +578,26 @@ async def get_biography_summary() -> str:
         cat_facts = by_cat[cat]
         lines.append(f"**{cat.replace('_', ' ').title()}**: {'; '.join(cat_facts)}")
 
-    # Add people
+    # Add people — flag those with unknown real names
     people = [e for e in entities if e["entity_type"] == "person"]
     if people:
         people_strs = []
         for p in people:
-            desc = f"{p['name']}"
-            if p["relationship"]:
-                desc += f" ({p['relationship']})"
+            props = p.get("properties") or {}
+            if isinstance(props, str):
+                try:
+                    props = json.loads(props)
+                except Exception:
+                    props = {}
+            name_unknown = not props.get("name_known", True)
+            label = p["name"]
+            if name_unknown:
+                label += " (name unknown)"
+            if p["family_role"] and p["family_role"].lower() not in p["name"].lower():
+                label += f" [{p['family_role']}]"
             if p["description"]:
-                desc += f" — {p['description']}"
-            people_strs.append(desc)
+                label += f" — {p['description']}"
+            people_strs.append(label)
         lines.append(f"**People**: {'; '.join(people_strs)}")
 
     # Add other entities
@@ -570,7 +606,30 @@ async def get_biography_summary() -> str:
         other_strs = [f"{e['name']} [{e['entity_type']}]" for e in others]
         lines.append(f"**Other**: {'; '.join(other_strs)}")
 
-    return "\n".join(lines)
+    result = "\n".join(lines)
+    _summary_cache["text"] = result
+    _summary_cache["dirty"] = False
+    return result
+
+
+async def get_unnamed_people() -> list[dict]:
+    """Return person entities whose real name is not yet known."""
+    entities = await get_all_entities(entity_type="person")
+    unnamed = []
+    for e in entities:
+        props = e.get("properties") or {}
+        if isinstance(props, str):
+            try:
+                props = json.loads(props)
+            except Exception:
+                props = {}
+        if not props.get("name_known", True):
+            unnamed.append({
+                "id": e["id"],
+                "label": e["name"],
+                "family_role": e.get("family_role", ""),
+            })
+    return unnamed
 
 
 # ─── VERIFICATION ────────────────────────────────────────────────────

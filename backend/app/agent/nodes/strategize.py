@@ -16,15 +16,24 @@ async def strategize(state: BiographerState) -> dict:
     mood = state.get("mood", "neutral")
     turn_count = state.get("turn_count", 0)
 
-    # Load biography context
+    # Load biography context — cached, only rebuilds when data changes
     biography_summary = await kg.get_biography_summary()
 
-    # Load coverage gaps
-    coverage_gaps = await kg.get_coverage_gaps()
+    # Load coverage gaps and unnamed people in parallel
+    coverage_gaps, unnamed_people = await asyncio.gather(
+        kg.get_coverage_gaps(),
+        kg.get_unnamed_people(),
+    )
+
     gap_text = ""
     if coverage_gaps:
         gap_items = [f"- {g['category']}: {g['coverage_level']} ({g['fact_count']} facts)" for g in coverage_gaps[:5]]
         gap_text = "Under-explored areas:\n" + "\n".join(gap_items)
+
+    unnamed_text = ""
+    if unnamed_people:
+        u_items = [f"- {u['label']} ({u['family_role']})" for u in unnamed_people]
+        unnamed_text = "Unnamed people (ask for their real name):\n" + "\n".join(u_items)
 
     # Load pending verifications
     pending = await kg.get_pending_verifications(limit=3)
@@ -33,7 +42,7 @@ async def strategize(state: BiographerState) -> dict:
         verify_items = [f"- \"{f['value']}\" (confidence: {f['confidence']})" for f in pending]
         verify_text = "Facts to verify:\n" + "\n".join(verify_items)
 
-    # RAG: retrieve relevant past conversations
+    # RAG: retrieve relevant past conversations — skip for short/simple inputs
     user_text = ""
     for msg in reversed(state.get("messages", [])):
         if isinstance(msg, HumanMessage):
@@ -41,7 +50,8 @@ async def strategize(state: BiographerState) -> dict:
             break
 
     rag_text = ""
-    if user_text:
+    _skip_rag = intent in ("greeting", "casual") or len(user_text.strip()) < 25
+    if user_text and not _skip_rag:
         try:
             similar = await vector_store.search_conversations(user_text, limit=3)
             if similar:
@@ -59,6 +69,8 @@ async def strategize(state: BiographerState) -> dict:
     ]
     if biography_summary:
         context_parts.append(f"\nKnown biography:\n{biography_summary}")
+    if unnamed_text:
+        context_parts.append(f"\n{unnamed_text}")
     if gap_text:
         context_parts.append(f"\n{gap_text}")
     if verify_text:

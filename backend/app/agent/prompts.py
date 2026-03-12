@@ -37,7 +37,16 @@ Respond with ONLY a JSON object (no other text):
       "type": "person",
       "relationship": "family",
       "family_role": "sibling",
-      "description": "User's older sister"
+      "description": "Tim's older sister",
+      "name_known": true
+    },
+    {
+      "name": "Mum",
+      "type": "person",
+      "relationship": "family",
+      "family_role": "mother",
+      "description": "Tim's mother — real name unknown",
+      "name_known": false
     }
   ],
   "facts": [
@@ -82,6 +91,15 @@ Respond with ONLY a JSON object (no other text):
 - ONLY record facts the user explicitly stated. Never infer.
 - For relationships between people, add entries to the "relationships" array.
   Types: parent_child, sibling, spouse, friend, colleague, other
+
+## Naming people — IMPORTANT
+- If a person's real first name is stated in the conversation (e.g. "my mum Janet"), use it: name="Janet", name_known=true
+- If a person is only referred to by role (e.g. "my mum", "my dad", "my brother"), use a
+  natural label as their name (e.g. "Mum", "Dad", "Brother") and set name_known=false
+- NEVER invent a name. NEVER use constructions like "Tim's Mother" — use "Mum" instead.
+- If an entity already exists in "Already Recorded" under a role label (e.g. "Mum"),
+  and the user now reveals their real name, extract them again with the real name and name_known=true
+  so the system can update the record.
 """
 
 
@@ -128,6 +146,8 @@ Strategy guidelines by intent:
 
 If there are coverage gaps, favor steering toward unexplored categories when natural.
 If there are facts to verify, consider weaving a natural verification into your question.
+If there are people with unknown names (listed under "Unnamed people"), asking for a name
+  is a high-priority gap — weave it in naturally when the conversation allows.
 Never be pushy — follow the user's energy and mood.
 """
 
