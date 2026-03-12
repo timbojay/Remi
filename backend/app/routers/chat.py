@@ -51,6 +51,8 @@ _RETRY_SUFFIX = (
 
 def _validate_response(text: str) -> tuple[bool, str]:
     """Returns (is_valid, reason_if_invalid)."""
+    if not text or len(text.split()) < 4:
+        return False, f"response too short or empty"
     if _HALLUCINATION_RE.search(text):
         return False, "hallucination phrase detected"
     word_count = len(text.split())
@@ -175,7 +177,6 @@ async def chat_stream(request: ChatRequest):
         valid, reason = _validate_response(full_response)
         if not valid:
             print(f"[respond] Validation failed ({reason}), retrying...")
-            # Retry with an even tighter prompt appended
             retry_messages = [
                 SystemMessage(content=system_prompt + _RETRY_SUFFIX)
             ] + llm_messages
@@ -189,6 +190,11 @@ async def chat_stream(request: ChatRequest):
             valid2, reason2 = _validate_response(full_response)
             if not valid2:
                 print(f"[respond] Retry still invalid ({reason2}), using anyway")
+
+        # Emergency fallback — never send a blank response to the client
+        if not full_response or not full_response.strip():
+            full_response = "Tell me more — I'm listening. What happened next?"
+            print("[respond] Emergency fallback used — LLM returned empty response")
 
         total_pre = t4 - t0
         print(f"[timing] Total pre-response: {total_pre:.2f}s | response: {len(full_response.split())} words")
