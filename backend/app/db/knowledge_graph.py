@@ -632,6 +632,39 @@ async def get_unnamed_people() -> list[dict]:
     return unnamed
 
 
+async def find_unnamed_entity_by_role(family_role: str) -> dict | None:
+    """Find a person entity stored under a role label (name_known=false) by family_role column.
+
+    Used by the extract node when a real name is revealed — e.g. family_role='mother'
+    finds the 'Mum' placeholder so it can be upgraded to the real name.
+    """
+    if not family_role:
+        return None
+    db = await get_db()
+    # Search by family_role column directly (not by name text)
+    cursor = await db.execute(
+        """SELECT id, name, entity_type, relationship, family_role, description, properties
+           FROM entities
+           WHERE entity_type = 'person'
+             AND is_suppressed = 0
+             AND LOWER(family_role) = LOWER(?)
+           LIMIT 10""",
+        (family_role,),
+    )
+    rows = await cursor.fetchall()
+    for row in rows:
+        e = dict(row)
+        props = e.get("properties") or {}
+        if isinstance(props, str):
+            try:
+                props = json.loads(props)
+            except Exception:
+                props = {}
+        if not props.get("name_known", True):
+            return e
+    return None
+
+
 # ─── VERIFICATION ────────────────────────────────────────────────────
 
 async def get_pending_verifications(limit: int = 3, cooldown_hours: int = 24) -> list[dict]:

@@ -81,44 +81,36 @@ async def extract(state: BiographerState) -> dict:
             print(f"[extract] Entity '{name}' already exists [{existing[0]['id'][:8]}]")
             continue
 
-        # If we now know a real name, check whether there's an unnamed placeholder
-        # stored under a role label (e.g. "Mum", "Dad") that should be upgraded.
+        # If we now know a real name, look for an unnamed placeholder to upgrade.
+        # Search by family_role column (not name text) so "Mum" is found when
+        # family_role="mother" — the previous approach searched name LIKE "%mother%"
+        # which never matched "Mum".
         if name_known:
             family_role = entity.get("family_role", "")
-            if family_role:
-                role_candidates = await kg.search_entities(family_role, entity_type="person")
-                for candidate in role_candidates:
-                    cand_props = candidate.get("properties") or {}
-                    if isinstance(cand_props, str):
-                        try:
-                            cand_props = json.loads(cand_props)
-                        except Exception:
-                            cand_props = {}
-                    if not cand_props.get("name_known", True):
-                        # Found an unnamed placeholder — upgrade it with the real name
-                        await kg.update_entity(
-                            candidate["id"],
-                            name=name,
-                            description=entity.get("description", candidate.get("description", "")),
-                            properties={"name_known": True},
-                        )
-                        entity_id_map[name.lower()] = candidate["id"]
-                        print(f"[extract] Upgraded unnamed entity: {candidate['name']} → {name} [{candidate['id'][:8]}]")
-                        break
-                else:
-                    # No unnamed placeholder found — create fresh
-                    result = await kg.add_entity(
-                        name=name,
-                        entity_type=entity.get("type", "person"),
-                        relationship=entity.get("relationship", ""),
-                        family_role=family_role,
-                        description=entity.get("description", ""),
-                        properties=props,
-                        conversation_id=conversation_id,
-                    )
-                    entity_id_map[name.lower()] = result["id"]
-                    print(f"[extract] Created entity: {name} (name_known=True) [{result['id'][:8]}]")
-                continue  # handled either way
+            placeholder = await kg.find_unnamed_entity_by_role(family_role) if family_role else None
+            if placeholder:
+                await kg.update_entity(
+                    placeholder["id"],
+                    name=name,
+                    description=entity.get("description", placeholder.get("description", "")),
+                    properties={"name_known": True},
+                )
+                entity_id_map[name.lower()] = placeholder["id"]
+                print(f"[extract] Upgraded unnamed entity: {placeholder['name']} → {name} [{placeholder['id'][:8]}]")
+            else:
+                # No unnamed placeholder — create fresh
+                result = await kg.add_entity(
+                    name=name,
+                    entity_type=entity.get("type", "person"),
+                    relationship=entity.get("relationship", ""),
+                    family_role=family_role,
+                    description=entity.get("description", ""),
+                    properties=props,
+                    conversation_id=conversation_id,
+                )
+                entity_id_map[name.lower()] = result["id"]
+                print(f"[extract] Created entity: {name} (name_known=True) [{result['id'][:8]}]")
+            continue  # handled either way
 
         # Unknown name or no family_role to match — create as-is
         result = await kg.add_entity(
