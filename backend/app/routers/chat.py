@@ -171,6 +171,8 @@ async def get_greeting():
     """Generate a personalized greeting for a new session."""
     try:
         greeting = await greet()
+        if not greeting or not greeting.strip():
+            greeting = f"Hello {settings.USER_NAME}! What would you like to share today?"
         return {"greeting": greeting}
     except Exception as e:
         print(f"[greet] Error: {e}")

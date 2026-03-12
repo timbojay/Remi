@@ -1,12 +1,24 @@
 """Centralized LLM utilities: retry logic, usage tracking, shared client."""
 
 import asyncio
+import re
 import time
 from dataclasses import dataclass, field
 from langchain_ollama import ChatOllama
 from langchain_core.messages import BaseMessage
 
 from app.config import settings
+
+
+def _strip_thinking(text: str) -> str:
+    """Remove <think>...</think> blocks produced by reasoning models (e.g. qwen3).
+
+    Some Ollama models output their chain-of-thought inside <think> tags before
+    the actual response. We strip them so downstream code only sees the answer.
+    """
+    # Remove <think>...</think> blocks (greedy=False so we don't eat real content)
+    stripped = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
+    return stripped.strip()
 
 
 @dataclass
@@ -67,7 +79,8 @@ async def invoke_with_retry(
             usage.record(node)
             print(f"[llm] {node}: completed in {elapsed:.1f}s (model: {settings.MODEL_NAME})")
 
-            return response.content if isinstance(response.content, str) else str(response.content)
+            raw = response.content if isinstance(response.content, str) else str(response.content)
+            return _strip_thinking(raw)
 
         except Exception as e:
             last_error = e
