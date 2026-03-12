@@ -1,7 +1,7 @@
 import asyncio
 import json
-import uuid
-from datetime import datetime, timezone
+import re
+import time
 
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
@@ -12,11 +12,12 @@ from app.agent.nodes.receive import receive
 from app.agent.nodes.classify import classify
 from app.agent.nodes.correct import correct
 from app.agent.nodes.strategize import strategize
+from app.agent.nodes.retrieve import retrieve_focused_context
 from app.agent.nodes.finalize import finalize
 from app.agent.nodes.extract import extract
 from app.agent.nodes.greet import greet
 from app.agent.prompts import build_system_prompt
-from app.services.llm import get_streaming_llm, usage
+from app.services.llm import get_streaming_llm, invoke_with_retry, usage
 from app.services.maintenance import notify_chat_start, notify_chat_end
 from app.config import settings
 
@@ -24,6 +25,40 @@ router = APIRouter(prefix="/api")
 
 # Keep references to background tasks so they aren't garbage collected
 _background_tasks: set[asyncio.Task] = set()
+
+# ── Response validation ────────────────────────────────────────────────────
+# Phrases that signal the model is guessing rather than interviewing
+_HALLUCINATION_RE = re.compile(
+    r"\b("
+    r"i (can |could )imagine|"
+    r"(she|he) must have|"
+    r"i (can |could )picture|"
+    r"i('ve| have) heard|"
+    r"i remember (reading|hearing|being told)|"
+    r"(she|he) probably|"
+    r"it must have been|"
+    r"i would imagine|"
+    r"sounds like (she|he|they)"
+    r")\b",
+    re.IGNORECASE,
+)
+
+_RETRY_SUFFIX = (
+    "\n\nREMINDER: Reply in 1-2 sentences maximum, then ask exactly ONE question. "
+    "Do not invent or assume anything not listed above. Be brief and direct."
+)
+
+
+def _validate_response(text: str) -> tuple[bool, str]:
+    """Returns (is_valid, reason_if_invalid)."""
+    if _HALLUCINATION_RE.search(text):
+        return False, "hallucination phrase detected"
+    word_count = len(text.split())
+    if word_count > 80:
+        return False, f"too long ({word_count} words)"
+    if text.count("?") > 2:
+        return False, f"too many questions ({text.count('?')})"
+    return True, ""
 
 
 class ChatRequest(BaseModel):
@@ -33,12 +68,10 @@ class ChatRequest(BaseModel):
 
 async def _post_stream_tasks(state: dict):
     """Run finalization and extraction after the stream completes."""
-    # -- FINALIZE: persist conversation --
     print("[post-stream] Starting finalize...")
     await finalize(state)
     print("[post-stream] Finalize complete.")
 
-    # -- EXTRACT: record facts/entities (only if should_extract) --
     if state.get("should_extract", True):
         print("[post-stream] Starting extraction...")
         try:
@@ -51,20 +84,18 @@ async def _post_stream_tasks(state: dict):
     else:
         print("[post-stream] Skipping extraction (no biographical content)")
 
-    # Signal chat complete — maintenance can resume
     notify_chat_end()
 
 
 @router.post("/chat/stream")
 async def chat_stream(request: ChatRequest):
-    """Stream a biographical conversation response.
+    """Biographical conversation with validate+retry respond step.
 
-    Pipeline: RECEIVE → CLASSIFY → STRATEGIZE → RESPOND (stream) → FINALIZE + EXTRACT (background)
+    Pipeline:
+      RECEIVE → CLASSIFY → STRATEGIZE → RETRIEVE → RESPOND (validate+retry) →
+      fake-stream to client → FINALIZE + EXTRACT (background)
     """
-    import time
     t0 = time.time()
-
-    # Signal that chat is active (pauses background maintenance)
     notify_chat_start()
 
     # -- RECEIVE --
@@ -78,6 +109,7 @@ async def chat_stream(request: ChatRequest):
         "should_extract": True,
         "strategy": "",
         "biography_summary": "",
+        "focused_context": "",
         "turn_count": 0,
         "response_content": "",
     }
@@ -89,20 +121,19 @@ async def chat_stream(request: ChatRequest):
     t1 = time.time()
     print(f"[timing] RECEIVE: {t1-t0:.2f}s")
 
-    # -- CLASSIFY (instant, rule-based) then STRATEGIZE --
-    # Classify runs first (microseconds — no LLM call) so strategize gets the
-    # correct intent + mood and can choose the right conversational strategy.
+    # -- CLASSIFY (instant, rule-based) --
     classify_result = await classify(state)
     state.update(classify_result)
     t1b = time.time()
     print(f"[timing] CLASSIFY: {t1b-t1:.4f}s (rule-based)")
 
+    # -- STRATEGIZE --
     strategy_result = await strategize(state)
     state.update(strategy_result)
     t2 = time.time()
     print(f"[timing] STRATEGIZE: {t2-t1b:.2f}s")
 
-    # -- CORRECT: if user is correcting data, fix it before responding --
+    # -- CORRECT --
     if state.get("is_correction"):
         try:
             await correct(state)
@@ -112,50 +143,77 @@ async def chat_stream(request: ChatRequest):
         print(f"[timing] CORRECT: {t2b-t2:.2f}s")
         t2 = t2b
 
-    # Build system prompt with strategy and mood
+    # -- RETRIEVE: focused context for this specific message --
+    focused_context = await retrieve_focused_context(state)
+    state["focused_context"] = focused_context
+    t3 = time.time()
+    print(f"[timing] RETRIEVE: {t3-t2:.2f}s")
+
+    # Build system prompt using focused context instead of full biography dump
     system_prompt = build_system_prompt(
         state["user_name"],
-        biography_summary=state.get("biography_summary", ""),
+        biography_summary=focused_context,   # targeted, not full dump
         strategy=state.get("strategy", ""),
         mood=state.get("mood", ""),
     )
     llm_messages = state["messages"]
-    pre_stream_time = t2 - t0
 
     async def generate():
-        collected_content = []
-
-        # -- RESPOND (streaming) --
+        # -- RESPOND: generate full response, validate, retry once if needed --
         llm = get_streaming_llm(max_tokens=200)
-
         messages_for_llm = [SystemMessage(content=system_prompt)] + llm_messages
 
-        async for chunk in llm.astream(messages_for_llm):
-            token = chunk.content if isinstance(chunk.content, str) else ""
-            if token:
-                collected_content.append(token)
-                yield json.dumps({
-                    "content": token,
-                    "done": False,
-                    "conversation_id": conversation_id,
-                }) + "\n"
-
-        full_response = "".join(collected_content)
+        # First attempt — non-streaming so we can validate before sending
+        full_response = await invoke_with_retry(
+            messages_for_llm,
+            node="respond",
+            max_tokens=200,
+        )
         t4 = time.time()
-        print(f"[timing] RESPOND: {t4-t2:.2f}s (total pre-stream: {pre_stream_time:.2f}s)")
+        print(f"[timing] RESPOND attempt 1: {t4-t3:.2f}s")
 
-        # Send done signal
+        valid, reason = _validate_response(full_response)
+        if not valid:
+            print(f"[respond] Validation failed ({reason}), retrying...")
+            # Retry with an even tighter prompt appended
+            retry_messages = [
+                SystemMessage(content=system_prompt + _RETRY_SUFFIX)
+            ] + llm_messages
+            full_response = await invoke_with_retry(
+                retry_messages,
+                node="respond-retry",
+                max_tokens=150,
+            )
+            t4b = time.time()
+            print(f"[timing] RESPOND retry: {t4b-t4:.2f}s")
+            valid2, reason2 = _validate_response(full_response)
+            if not valid2:
+                print(f"[respond] Retry still invalid ({reason2}), using anyway")
+
+        total_pre = t4 - t0
+        print(f"[timing] Total pre-response: {total_pre:.2f}s | response: {len(full_response.split())} words")
+
+        # Fake-stream: yield word by word so the UI still feels alive
+        words = full_response.split()
+        for i, word in enumerate(words):
+            token = word if i == 0 else " " + word
+            yield json.dumps({
+                "content": token,
+                "done": False,
+                "conversation_id": conversation_id,
+            }) + "\n"
+            await asyncio.sleep(0.03)  # ~30ms per word ≈ natural reading pace
+
         yield json.dumps({
             "content": "",
             "done": True,
             "conversation_id": conversation_id,
         }) + "\n"
 
-        # Update state with full response for post-stream tasks
+        # Update state for post-stream background tasks
         state["messages"] = llm_messages + [AIMessage(content=full_response)]
         state["response_content"] = full_response
 
-        # Run finalize + extract in background with a kept reference
         task = asyncio.create_task(_post_stream_tasks(state))
         _background_tasks.add(task)
         task.add_done_callback(_background_tasks.discard)
