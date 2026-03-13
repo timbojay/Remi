@@ -20,6 +20,18 @@ async def strategize(state: BiographerState) -> dict:
     # Load biography context — cached, only rebuilds when data changes
     biography_summary = await kg.get_biography_summary()
 
+    # Short-circuit for simple intents — no LLM call needed
+    if intent in ("greeting", "casual"):
+        _TEMPLATE_STRATEGIES = {
+            "greeting": "Greet warmly. If there are coverage gaps, steer toward an unexplored area naturally.",
+            "casual": "Respond briefly and naturally. Look for an opening to explore biography.",
+        }
+        print(f"[strategize] Short-circuit for intent={intent} (no LLM call)")
+        return {
+            "strategy": _TEMPLATE_STRATEGIES[intent],
+            "biography_summary": biography_summary,
+        }
+
     # Load coverage gaps and unnamed people in parallel
     coverage_gaps, unnamed_people = await asyncio.gather(
         kg.get_coverage_gaps(),
@@ -36,12 +48,20 @@ async def strategize(state: BiographerState) -> dict:
         u_items = [f"- {u['label']} ({u['family_role']})" for u in unnamed_people]
         unnamed_text = "Unnamed people (ask for their real name):\n" + "\n".join(u_items)
 
-    # Load pending verifications
-    pending = await kg.get_pending_verifications(limit=3)
+    # Load pending verifications and top questions in parallel
+    pending, top_questions = await asyncio.gather(
+        kg.get_pending_verifications(limit=3),
+        kg.get_top_questions(limit=3),
+    )
     verify_text = ""
     if pending:
         verify_items = [f"- \"{f['value']}\" (confidence: {f['confidence']})" for f in pending]
         verify_text = "Facts to verify:\n" + "\n".join(verify_items)
+
+    questions_text = ""
+    if top_questions:
+        q_items = [f"- [{q['category']}] {q['question_text']}" for q in top_questions]
+        questions_text = "Suggested questions to explore:\n" + "\n".join(q_items)
 
     # RAG: retrieve relevant past conversations — skip for short/simple inputs
     user_text = ""
@@ -78,6 +98,8 @@ async def strategize(state: BiographerState) -> dict:
         context_parts.append(f"\n{verify_text}")
     if rag_text:
         context_parts.append(f"\n{rag_text}")
+    if questions_text:
+        context_parts.append(f"\n{questions_text}")
 
     context = "\n".join(context_parts)
 

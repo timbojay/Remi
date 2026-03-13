@@ -74,7 +74,7 @@ async def _post_stream_tasks(state: dict):
     await finalize(state)
     print("[post-stream] Finalize complete.")
 
-    if state.get("should_extract", True):
+    if state.get("should_extract", True) and not state.get("skip_extraction", False):
         print("[post-stream] Starting extraction...")
         try:
             await extract(state)
@@ -114,6 +114,7 @@ async def chat_stream(request: ChatRequest):
         "focused_context": "",
         "turn_count": 0,
         "response_content": "",
+        "skip_extraction": False,
     }
     state = await receive(initial_state)
     for k, v in state.items():
@@ -138,7 +139,8 @@ async def chat_stream(request: ChatRequest):
     # -- CORRECT --
     if state.get("is_correction"):
         try:
-            await correct(state)
+            correct_result = await correct(state)
+            state.update(correct_result)
         except Exception as e:
             print(f"[correct] Error: {e}")
         t2b = time.time()
@@ -208,7 +210,7 @@ async def chat_stream(request: ChatRequest):
                 "done": False,
                 "conversation_id": conversation_id,
             }) + "\n"
-            await asyncio.sleep(0.03)  # ~30ms per word ≈ natural reading pace
+            # No artificial delay — yield immediately for responsive streaming
 
         yield json.dumps({
             "content": "",

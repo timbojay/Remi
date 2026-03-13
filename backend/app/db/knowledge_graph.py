@@ -187,11 +187,18 @@ async def update_fact(
 
 async def delete_fact(fact_id: str, reason: str) -> dict:
     db = await get_db()
+    # Fetch category before suppressing so we can update coverage stats
+    cursor = await db.execute("SELECT category FROM facts WHERE id = ?", (fact_id,))
+    row = await cursor.fetchone()
+    category = row["category"] if row else None
+
     await db.execute(
         "UPDATE facts SET is_suppressed = 1, suppression_reason = ?, updated_at = ? WHERE id = ?",
         (reason, _now(), fact_id),
     )
     await db.commit()
+    if category:
+        await _update_coverage(category)
     _invalidate_summary_cache()
     return {"id": fact_id, "suppressed": True, "reason": reason}
 
@@ -731,18 +738,234 @@ async def mark_verified(fact_id: str) -> dict:
     return {"id": fact_id, "verified": True}
 
 
-async def check_contradictions(value: str, category: str) -> list[dict]:
-    """Check if a new fact contradicts any verified facts in the same category."""
+async def check_contradictions(
+    value: str,
+    category: str,
+    subject_entity_id: str | None = None,
+    predicate: str | None = None,
+) -> list[dict]:
+    """Check if a new fact contradicts existing facts in the same category.
+
+    Returns verified facts first (higher priority), then unverified.
+    Filters by subject_entity_id and predicate when provided for precision.
+    """
     db = await get_db()
+    conditions = ["is_suppressed = 0", "category = ?"]
+    params: list = [category]
+
+    if subject_entity_id:
+        conditions.append("subject_entity_id = ?")
+        params.append(subject_entity_id)
+    if predicate:
+        conditions.append("predicate = ?")
+        params.append(predicate)
+
+    where = " AND ".join(conditions)
     cursor = await db.execute(
-        """SELECT id, value, confidence
+        f"""SELECT id, value, confidence, is_verified, predicate, subject_entity_id
            FROM facts
-           WHERE is_suppressed = 0 AND is_verified = 1 AND category = ?""",
-        (category,),
+           WHERE {where}
+           ORDER BY is_verified DESC, confidence DESC""",
+        params,
     )
     rows = await cursor.fetchall()
     return [dict(r) for r in rows]
 
+
+# ─── NARRATIVES ─────────────────────────────────────────────────────
+
+async def add_narrative(
+    title: str,
+    summary: str,
+    fact_ids: list[str] | None = None,
+    era: str | None = None,
+    conversation_id: str | None = None,
+) -> dict:
+    db = await get_db()
+    narrative_id = _id()
+    now = _now()
+
+    await db.execute(
+        """INSERT INTO narratives (id, title, summary, fact_ids, era, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+        (narrative_id, title, summary, json.dumps(fact_ids or []), era, now, now),
+    )
+
+    if conversation_id:
+        await db.execute(
+            "INSERT INTO provenance (id, target_type, target_id, conversation_id, created_at) VALUES (?, ?, ?, ?, ?)",
+            (_id(), "narrative", narrative_id, conversation_id, now),
+        )
+
+    await db.commit()
+    return {"id": narrative_id, "title": title}
+
+
+async def get_all_narratives(era: str | None = None) -> list[dict]:
+    db = await get_db()
+    if era:
+        cursor = await db.execute(
+            "SELECT * FROM narratives WHERE era = ? ORDER BY created_at DESC", (era,)
+        )
+    else:
+        cursor = await db.execute("SELECT * FROM narratives ORDER BY created_at DESC")
+    rows = await cursor.fetchall()
+    results = []
+    for r in rows:
+        d = dict(r)
+        d["fact_ids"] = json.loads(d["fact_ids"]) if d["fact_ids"] else []
+        results.append(d)
+    return results
+
+
+async def search_narratives(query: str, limit: int = 10) -> list[dict]:
+    db = await get_db()
+    cursor = await db.execute(
+        "SELECT * FROM narratives WHERE title LIKE ? OR summary LIKE ? ORDER BY created_at DESC LIMIT ?",
+        (f"%{query}%", f"%{query}%", limit),
+    )
+    rows = await cursor.fetchall()
+    results = []
+    for r in rows:
+        d = dict(r)
+        d["fact_ids"] = json.loads(d["fact_ids"]) if d["fact_ids"] else []
+        results.append(d)
+    return results
+
+
+# ─── QUESTION BANK ──────────────────────────────────────────────────
+
+# Template questions per category for gap-based generation
+_QUESTION_TEMPLATES: dict[str, list[str]] = {
+    "identity": [
+        "What is your full name and do you have any nicknames?",
+        "When and where were you born?",
+    ],
+    "family": [
+        "Can you tell me about your parents?",
+        "Do you have any siblings?",
+        "Are you married or do you have a partner?",
+    ],
+    "education": [
+        "Where did you go to school?",
+        "What subjects did you enjoy most?",
+        "Did you go to university or college?",
+    ],
+    "career": [
+        "What was your first job?",
+        "What has been your main career?",
+        "What work are you most proud of?",
+    ],
+    "residence": [
+        "Where have you lived throughout your life?",
+        "Where do you live now?",
+    ],
+    "milestone": [
+        "What would you say are the biggest milestones in your life?",
+        "Is there a moment that changed everything for you?",
+    ],
+    "childhood": [
+        "What are your earliest memories?",
+        "What was your childhood like?",
+        "Did you have a favourite toy or game growing up?",
+    ],
+    "relationships": [
+        "Who has been the most important person in your life?",
+        "Do you have close friends from childhood?",
+    ],
+    "hobbies": [
+        "What do you enjoy doing in your free time?",
+        "Do you have any hobbies or passions?",
+    ],
+    "health": [
+        "How is your health generally?",
+    ],
+    "travel": [
+        "Have you done much travelling?",
+        "What is your favourite place you have visited?",
+    ],
+    "beliefs": [
+        "Do you have any strong beliefs or values that guide you?",
+    ],
+    "daily_life": [
+        "What does a typical day look like for you?",
+    ],
+    "challenges": [
+        "What has been the biggest challenge you have faced?",
+    ],
+    "dreams": [
+        "Is there anything you still hope to do?",
+        "What are your dreams for the future?",
+    ],
+}
+
+
+async def add_question(
+    question_text: str,
+    category: str,
+    priority: int = 3,
+) -> dict:
+    """Add a question to the bank, deduplicating by similar text."""
+    db = await get_db()
+
+    # Check for duplicate
+    cursor = await db.execute(
+        "SELECT id FROM questions WHERE LOWER(question_text) = LOWER(?) AND is_answered = 0",
+        (question_text,),
+    )
+    if await cursor.fetchone():
+        return {"id": None, "already_exists": True}
+
+    question_id = _id()
+    now = _now()
+    await db.execute(
+        "INSERT INTO questions (id, question_text, category, priority, created_at) VALUES (?, ?, ?, ?, ?)",
+        (question_id, question_text, category, priority, now),
+    )
+    await db.commit()
+    return {"id": question_id, "question_text": question_text}
+
+
+async def get_top_questions(limit: int = 3) -> list[dict]:
+    """Get highest-priority unanswered questions."""
+    db = await get_db()
+    cursor = await db.execute(
+        """SELECT id, question_text, category, priority
+           FROM questions
+           WHERE is_answered = 0
+           ORDER BY priority DESC
+           LIMIT ?""",
+        (limit,),
+    )
+    return [dict(r) for r in await cursor.fetchall()]
+
+
+async def mark_question_answered(question_id: str) -> dict:
+    db = await get_db()
+    now = _now()
+    await db.execute(
+        "UPDATE questions SET is_answered = 1, answered_at = ? WHERE id = ?",
+        (now, question_id),
+    )
+    await db.commit()
+    return {"id": question_id, "answered": True}
+
+
+async def generate_questions_from_gaps() -> int:
+    """Generate template-based questions from coverage gaps. Returns count of new questions."""
+    gaps = await get_coverage_gaps()
+    count = 0
+    for gap in gaps:
+        category = gap["category"]
+        templates = _QUESTION_TEMPLATES.get(category, [])
+        for q_text in templates:
+            result = await add_question(q_text, category, priority=4 if gap["fact_count"] == 0 else 3)
+            if result.get("id"):
+                count += 1
+    return count
+
+
+# ─── AGENT STATE ────────────────────────────────────────────────────
 
 async def _get_agent_state(key: str) -> str | None:
     """Get a value from agent_state."""

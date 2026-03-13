@@ -1,0 +1,514 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0B1945598D1E0737CB626BBA /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1BA85A824E629EEF2372005 /* APIClient.swift */; };
+		0C4090CE1002E0A351A4143E /* MessageBubble.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DA82D30CF0A23367CCF336 /* MessageBubble.swift */; };
+		0ECF9ACBCB90C7E02050DD2B /* ChatViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4612C66B5A591AF0D3FF8 /* ChatViewModel.swift */; };
+		14B7C36B74BA319083B0EA5A /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 992AE420F20CCAFB1575ACFD /* ContentView.swift */; };
+		21ADB200558C8F7512FD1C61 /* PeopleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 596C6AFED46AF327732CC8D6 /* PeopleView.swift */; };
+		224A611C9952E1815CE09E6E /* PeopleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 596C6AFED46AF327732CC8D6 /* PeopleView.swift */; };
+		36A1CA3E52F98E59D33292E1 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BEB6060C11686C986EEA934 /* Message.swift */; };
+		38ADF59287BD5DB459BFD848 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B574DEC02D59F563A0752774 /* SidebarView.swift */; };
+		396A7C3AC350714E05AD1228 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F49D208463E13531EF55D02 /* ChatView.swift */; };
+		40B79FC82DF14C7FBDFBFE7E /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 992AE420F20CCAFB1575ACFD /* ContentView.swift */; };
+		4A34E3733555B81D88C46330 /* CoverageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 989FF90F145BF7155B9BD45E /* CoverageView.swift */; };
+		4A432FB97B20894C20B0A30B /* ChatViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4612C66B5A591AF0D3FF8 /* ChatViewModel.swift */; };
+		4B48B969C116C9AD06683C3D /* RemiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F4E747A3D65101EAE2331D4 /* RemiApp.swift */; };
+		50463634E7232DC45B5F8F61 /* InputBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BB625EB4529B1B8256A6AE1 /* InputBar.swift */; };
+		54DD6A0BD75A83DABF906770 /* Conversation.swift in Sources */ = {isa = PBXBuildFile; fileRef = E350323D0161969173A90483 /* Conversation.swift */; };
+		586B0E29B6D77772DD0F3EFD /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F49D208463E13531EF55D02 /* ChatView.swift */; };
+		5B9F5684F75D3D0E5EC87DBD /* MultiLineTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B77241276D84B190DCFC1608 /* MultiLineTextView.swift */; };
+		72D3A8B41D8CB87CD78769B4 /* RemiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F4E747A3D65101EAE2331D4 /* RemiApp.swift */; };
+		7CEA189FF5D197370FB92C8F /* FactsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDEEB6937177C5B023AB5B2D /* FactsView.swift */; };
+		7EB486570F5AD5AA9885DB0B /* Conversation.swift in Sources */ = {isa = PBXBuildFile; fileRef = E350323D0161969173A90483 /* Conversation.swift */; };
+		86EE7BE19E99370C10A5680D /* KnowledgeModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A17D5FB765E91C29F0BD3F0D /* KnowledgeModels.swift */; };
+		9F1A0CFAAB5930167BCAF6A1 /* FamilyTreeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9046D27DA279A93B1B7143CA /* FamilyTreeView.swift */; };
+		A27E6EDF77A5E684D92B4DF7 /* KnowledgeModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A17D5FB765E91C29F0BD3F0D /* KnowledgeModels.swift */; };
+		AB51524E349A7E781A9DDC1D /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BEB6060C11686C986EEA934 /* Message.swift */; };
+		AED020DFF38A1107CBD3B936 /* CoverageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 989FF90F145BF7155B9BD45E /* CoverageView.swift */; };
+		B03C7CD0B4924B7A740216CB /* TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 197979869599C641822BD765 /* TimelineView.swift */; };
+		B1BF6165DCC272087F5A94CD /* MultiLineTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B77241276D84B190DCFC1608 /* MultiLineTextView.swift */; };
+		B953E3F003D9F243468C5D0F /* TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 197979869599C641822BD765 /* TimelineView.swift */; };
+		C5305B55BA7F712A168E85B5 /* RemiAvatar.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDE636B63AF2410B9F441AE9 /* RemiAvatar.swift */; };
+		C98B742E948234D6C151CE00 /* FactsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDEEB6937177C5B023AB5B2D /* FactsView.swift */; };
+		D3825E620717C07BB89A559B /* BiographyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA4582819A4CFFD58F81B486 /* BiographyView.swift */; };
+		D6E754770E08D90C10CFDA99 /* InputBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BB625EB4529B1B8256A6AE1 /* InputBar.swift */; };
+		D8E9371D71271535E9F22D42 /* RemiAvatar.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDE636B63AF2410B9F441AE9 /* RemiAvatar.swift */; };
+		DA17813E328E7E6B4F0B72F9 /* MessageBubble.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DA82D30CF0A23367CCF336 /* MessageBubble.swift */; };
+		DBBA456CD9ABD068DA99DEF1 /* FamilyTreeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9046D27DA279A93B1B7143CA /* FamilyTreeView.swift */; };
+		EFF774428E7E98188D97B8AC /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1BA85A824E629EEF2372005 /* APIClient.swift */; };
+		F7011BD6F1E25C844A003657 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B574DEC02D59F563A0752774 /* SidebarView.swift */; };
+		F9193AB9100AA0F0075CF42A /* BiographyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA4582819A4CFFD58F81B486 /* BiographyView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		197979869599C641822BD765 /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineView.swift; sourceTree = "<group>"; };
+		1F4E747A3D65101EAE2331D4 /* RemiApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemiApp.swift; sourceTree = "<group>"; };
+		3C92562123ECC39FB269FB4A /* Remi.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Remi.entitlements; sourceTree = "<group>"; };
+		596C6AFED46AF327732CC8D6 /* PeopleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeopleView.swift; sourceTree = "<group>"; };
+		7BB625EB4529B1B8256A6AE1 /* InputBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputBar.swift; sourceTree = "<group>"; };
+		9046D27DA279A93B1B7143CA /* FamilyTreeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyTreeView.swift; sourceTree = "<group>"; };
+		989FF90F145BF7155B9BD45E /* CoverageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoverageView.swift; sourceTree = "<group>"; };
+		992AE420F20CCAFB1575ACFD /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		9BEB6060C11686C986EEA934 /* Message.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
+		9F49D208463E13531EF55D02 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
+		A17D5FB765E91C29F0BD3F0D /* KnowledgeModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KnowledgeModels.swift; sourceTree = "<group>"; };
+		A3DA82D30CF0A23367CCF336 /* MessageBubble.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageBubble.swift; sourceTree = "<group>"; };
+		B574DEC02D59F563A0752774 /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
+		B77241276D84B190DCFC1608 /* MultiLineTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultiLineTextView.swift; sourceTree = "<group>"; };
+		C3D4612C66B5A591AF0D3FF8 /* ChatViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatViewModel.swift; sourceTree = "<group>"; };
+		C4630E7C8B849ADD6C2D1B22 /* Remi.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Remi.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CDEEB6937177C5B023AB5B2D /* FactsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FactsView.swift; sourceTree = "<group>"; };
+		D1BA85A824E629EEF2372005 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		DA4582819A4CFFD58F81B486 /* BiographyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiographyView.swift; sourceTree = "<group>"; };
+		DC4A469D188826C5C1485CBE /* Remi.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Remi.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E350323D0161969173A90483 /* Conversation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Conversation.swift; sourceTree = "<group>"; };
+		EDE636B63AF2410B9F441AE9 /* RemiAvatar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemiAvatar.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		2F61EB4AFAE82B175D829242 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				E350323D0161969173A90483 /* Conversation.swift */,
+				A17D5FB765E91C29F0BD3F0D /* KnowledgeModels.swift */,
+				9BEB6060C11686C986EEA934 /* Message.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		364BBE56F2F49E1C3A22A22B = {
+			isa = PBXGroup;
+			children = (
+				AB3D9F531B6A4A622EDC05D1 /* Remi */,
+				DB291654E0C27C18415F3098 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		64CC4091A72AAD17161B19CC /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				C3D4612C66B5A591AF0D3FF8 /* ChatViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		7D39DBA104F645FC031933DB /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				D1BA85A824E629EEF2372005 /* APIClient.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		93835073C3CE3C0CEC170E74 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				DA4582819A4CFFD58F81B486 /* BiographyView.swift */,
+				9F49D208463E13531EF55D02 /* ChatView.swift */,
+				989FF90F145BF7155B9BD45E /* CoverageView.swift */,
+				CDEEB6937177C5B023AB5B2D /* FactsView.swift */,
+				9046D27DA279A93B1B7143CA /* FamilyTreeView.swift */,
+				7BB625EB4529B1B8256A6AE1 /* InputBar.swift */,
+				A3DA82D30CF0A23367CCF336 /* MessageBubble.swift */,
+				B77241276D84B190DCFC1608 /* MultiLineTextView.swift */,
+				596C6AFED46AF327732CC8D6 /* PeopleView.swift */,
+				EDE636B63AF2410B9F441AE9 /* RemiAvatar.swift */,
+				B574DEC02D59F563A0752774 /* SidebarView.swift */,
+				197979869599C641822BD765 /* TimelineView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		AB3D9F531B6A4A622EDC05D1 /* Remi */ = {
+			isa = PBXGroup;
+			children = (
+				992AE420F20CCAFB1575ACFD /* ContentView.swift */,
+				3C92562123ECC39FB269FB4A /* Remi.entitlements */,
+				1F4E747A3D65101EAE2331D4 /* RemiApp.swift */,
+				2F61EB4AFAE82B175D829242 /* Models */,
+				7D39DBA104F645FC031933DB /* Services */,
+				64CC4091A72AAD17161B19CC /* ViewModels */,
+				93835073C3CE3C0CEC170E74 /* Views */,
+			);
+			path = Remi;
+			sourceTree = "<group>";
+		};
+		DB291654E0C27C18415F3098 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				C4630E7C8B849ADD6C2D1B22 /* Remi.app */,
+				DC4A469D188826C5C1485CBE /* Remi.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		201B9B3E23747BF5CFE3F5D8 /* Remi_macOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B0621F27ADA1181AD74D97C7 /* Build configuration list for PBXNativeTarget "Remi_macOS" */;
+			buildPhases = (
+				A2D6BF5EA37A40DC84EB817E /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Remi_macOS;
+			packageProductDependencies = (
+			);
+			productName = Remi_macOS;
+			productReference = DC4A469D188826C5C1485CBE /* Remi.app */;
+			productType = "com.apple.product-type.application";
+		};
+		9FBA93A7AA34734CBF81A041 /* Remi_iOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 86603701BBF8FBA1A4F6C9A0 /* Build configuration list for PBXNativeTarget "Remi_iOS" */;
+			buildPhases = (
+				D1D2537D4A0FE85E75D8FDE5 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Remi_iOS;
+			packageProductDependencies = (
+			);
+			productName = Remi_iOS;
+			productReference = C4630E7C8B849ADD6C2D1B22 /* Remi.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		7897341F649EDB7595E3B052 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+			};
+			buildConfigurationList = 1E625220A00187EB79480C42 /* Build configuration list for PBXProject "Remi" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 364BBE56F2F49E1C3A22A22B;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				9FBA93A7AA34734CBF81A041 /* Remi_iOS */,
+				201B9B3E23747BF5CFE3F5D8 /* Remi_macOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A2D6BF5EA37A40DC84EB817E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EFF774428E7E98188D97B8AC /* APIClient.swift in Sources */,
+				F9193AB9100AA0F0075CF42A /* BiographyView.swift in Sources */,
+				586B0E29B6D77772DD0F3EFD /* ChatView.swift in Sources */,
+				0ECF9ACBCB90C7E02050DD2B /* ChatViewModel.swift in Sources */,
+				14B7C36B74BA319083B0EA5A /* ContentView.swift in Sources */,
+				7EB486570F5AD5AA9885DB0B /* Conversation.swift in Sources */,
+				4A34E3733555B81D88C46330 /* CoverageView.swift in Sources */,
+				7CEA189FF5D197370FB92C8F /* FactsView.swift in Sources */,
+				DBBA456CD9ABD068DA99DEF1 /* FamilyTreeView.swift in Sources */,
+				D6E754770E08D90C10CFDA99 /* InputBar.swift in Sources */,
+				A27E6EDF77A5E684D92B4DF7 /* KnowledgeModels.swift in Sources */,
+				AB51524E349A7E781A9DDC1D /* Message.swift in Sources */,
+				0C4090CE1002E0A351A4143E /* MessageBubble.swift in Sources */,
+				5B9F5684F75D3D0E5EC87DBD /* MultiLineTextView.swift in Sources */,
+				224A611C9952E1815CE09E6E /* PeopleView.swift in Sources */,
+				4B48B969C116C9AD06683C3D /* RemiApp.swift in Sources */,
+				D8E9371D71271535E9F22D42 /* RemiAvatar.swift in Sources */,
+				38ADF59287BD5DB459BFD848 /* SidebarView.swift in Sources */,
+				B03C7CD0B4924B7A740216CB /* TimelineView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D1D2537D4A0FE85E75D8FDE5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0B1945598D1E0737CB626BBA /* APIClient.swift in Sources */,
+				D3825E620717C07BB89A559B /* BiographyView.swift in Sources */,
+				396A7C3AC350714E05AD1228 /* ChatView.swift in Sources */,
+				4A432FB97B20894C20B0A30B /* ChatViewModel.swift in Sources */,
+				40B79FC82DF14C7FBDFBFE7E /* ContentView.swift in Sources */,
+				54DD6A0BD75A83DABF906770 /* Conversation.swift in Sources */,
+				AED020DFF38A1107CBD3B936 /* CoverageView.swift in Sources */,
+				C98B742E948234D6C151CE00 /* FactsView.swift in Sources */,
+				9F1A0CFAAB5930167BCAF6A1 /* FamilyTreeView.swift in Sources */,
+				50463634E7232DC45B5F8F61 /* InputBar.swift in Sources */,
+				86EE7BE19E99370C10A5680D /* KnowledgeModels.swift in Sources */,
+				36A1CA3E52F98E59D33292E1 /* Message.swift in Sources */,
+				DA17813E328E7E6B4F0B72F9 /* MessageBubble.swift in Sources */,
+				B1BF6165DCC272087F5A94CD /* MultiLineTextView.swift in Sources */,
+				21ADB200558C8F7512FD1C61 /* PeopleView.swift in Sources */,
+				72D3A8B41D8CB87CD78769B4 /* RemiApp.swift in Sources */,
+				C5305B55BA7F712A168E85B5 /* RemiAvatar.swift in Sources */,
+				F7011BD6F1E25C844A003657 /* SidebarView.swift in Sources */,
+				B953E3F003D9F243468C5D0F /* TimelineView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		12E9D49EE13A67B22AB2E2E1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Remi/Remi.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Remi;
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Remi connects to a local AI backend running on your machine.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.remi.app;
+				PRODUCT_NAME = Remi;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		5DC2A7FF7F7818A0669B4A99 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+		63571BBD768AB5EBB7DE6798 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		9B2F3ED4AD84A7ABC0BDC3ED /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Remi/Remi.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Remi;
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Remi connects to a local AI backend running on your machine.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.remi.app;
+				PRODUCT_NAME = Remi;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		A34CEB5CAB3460821E008405 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Remi/Remi.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Remi;
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Remi connects to a local AI backend running on your machine.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.remi.app;
+				PRODUCT_NAME = Remi;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D94EC595CF89EC17AACA8A2C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Remi/Remi.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Remi;
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Remi connects to a local AI backend running on your machine.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.remi.app;
+				PRODUCT_NAME = Remi;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1E625220A00187EB79480C42 /* Build configuration list for PBXProject "Remi" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				63571BBD768AB5EBB7DE6798 /* Debug */,
+				5DC2A7FF7F7818A0669B4A99 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		86603701BBF8FBA1A4F6C9A0 /* Build configuration list for PBXNativeTarget "Remi_iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A34CEB5CAB3460821E008405 /* Debug */,
+				12E9D49EE13A67B22AB2E2E1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		B0621F27ADA1181AD74D97C7 /* Build configuration list for PBXNativeTarget "Remi_macOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D94EC595CF89EC17AACA8A2C /* Debug */,
+				9B2F3ED4AD84A7ABC0BDC3ED /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 7897341F649EDB7595E3B052 /* Project object */;
+}

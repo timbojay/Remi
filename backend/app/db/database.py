@@ -142,6 +142,32 @@ async def init_db():
             updated_at TEXT NOT NULL DEFAULT (datetime('now'))
         );
 
+        -- Narratives: story threads grouping related facts
+        CREATE TABLE IF NOT EXISTS narratives (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            summary TEXT NOT NULL,
+            fact_ids TEXT DEFAULT '[]',
+            era TEXT,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_narratives_era ON narratives(era);
+
+        -- Question bank: tracks interview questions and follow-ups
+        CREATE TABLE IF NOT EXISTS questions (
+            id TEXT PRIMARY KEY,
+            question_text TEXT NOT NULL,
+            category TEXT NOT NULL,
+            priority INTEGER DEFAULT 3,
+            is_answered INTEGER DEFAULT 0,
+            asked_at TEXT,
+            answered_at TEXT,
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_questions_priority ON questions(priority DESC);
+        CREATE INDEX IF NOT EXISTS idx_questions_answered ON questions(is_answered);
+
         -- Agent persistent state
         CREATE TABLE IF NOT EXISTS agent_state (
             key TEXT PRIMARY KEY,

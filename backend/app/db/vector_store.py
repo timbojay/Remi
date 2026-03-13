@@ -1,13 +1,16 @@
 """ChromaDB vector store for conversation memory and semantic search."""
 
+import asyncio
 import chromadb
 from chromadb.utils.embedding_functions import OllamaEmbeddingFunction
 from app.config import settings
 
 _client: chromadb.ClientAPI | None = None
 _collection: chromadb.Collection | None = None
+_fact_collection: chromadb.Collection | None = None
 
 COLLECTION_NAME = "conversation_memory"
+FACT_COLLECTION_NAME = "fact_embeddings"
 OLLAMA_EMBED_MODEL = "nomic-embed-text"
 OLLAMA_BASE_URL = "http://localhost:11434"
 
@@ -126,3 +129,74 @@ async def get_collection_count() -> int:
         return collection.count()
     except Exception:
         return 0
+
+
+# ─── FACT EMBEDDINGS ──────────────────────────────────────────────────
+
+def _get_fact_collection() -> chromadb.Collection:
+    global _fact_collection
+    if _fact_collection is None:
+        client = _get_client()
+        embed_fn = OllamaEmbeddingFunction(
+            url=OLLAMA_BASE_URL,
+            model_name=OLLAMA_EMBED_MODEL,
+        )
+        _fact_collection = client.get_or_create_collection(
+            name=FACT_COLLECTION_NAME,
+            embedding_function=embed_fn,
+            metadata={"hnsw:space": "cosine"},
+        )
+    return _fact_collection
+
+
+async def index_fact(fact_id: str, fact_value: str) -> None:
+    """Index a fact's text for semantic dedup. Runs embedding in a thread to avoid blocking."""
+    def _do():
+        collection = _get_fact_collection()
+        collection.upsert(
+            documents=[fact_value],
+            ids=[fact_id],
+            metadatas=[{"fact_id": fact_id}],
+        )
+    try:
+        await asyncio.to_thread(_do)
+    except Exception as e:
+        print(f"[vector] Failed to index fact: {e}")
+
+
+async def find_similar_facts(text: str, threshold: float = 0.85, limit: int = 5) -> list[dict]:
+    """Find facts semantically similar to the given text. Returns matches above threshold."""
+    def _do():
+        collection = _get_fact_collection()
+        if collection.count() == 0:
+            return []
+        results = collection.query(
+            query_texts=[text],
+            n_results=min(limit, collection.count()),
+        )
+        return results
+
+    try:
+        results = await asyncio.to_thread(_do)
+    except Exception as e:
+        print(f"[vector] Fact similarity search error: {e}")
+        return []
+
+    if not results or not results["documents"] or not results["documents"][0]:
+        return []
+
+    hits = []
+    for doc, metadata, distance in zip(
+        results["documents"][0],
+        results["metadatas"][0],
+        results["distances"][0],
+    ):
+        similarity = 1 - distance
+        if similarity >= threshold:
+            hits.append({
+                "fact_id": metadata.get("fact_id", ""),
+                "text": doc,
+                "similarity": similarity,
+            })
+
+    return hits

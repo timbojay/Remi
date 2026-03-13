@@ -105,6 +105,27 @@ Respond with ONLY a JSON object (no other text):
 - For relationships between people, add entries to the "relationships" array.
   Types: parent_child, sibling, spouse, friend, colleague, other
 
+## Temporal Data — IMPORTANT
+- ALWAYS extract "year" and "era" when mentioned or strongly implied.
+- If the user says "in the 80s", set year to the midpoint (e.g. 1985). "Back in 1985" → year=1985.
+- If the user says "when I was a kid" or "growing up", set era="childhood".
+- If the user says "at uni" or "in college", set era="young_adult".
+- If the user says "last year" or "recently", compute the year from today's date.
+- Era values: childhood (0-12), teenager (13-19), young_adult (20-30), adult (31-60), later_life (60+).
+- Every fact SHOULD have at least an "era" value if the time period is mentioned or implied. Only omit if truly impossible to infer.
+- Example: "We used to go camping every summer as kids" → era="childhood", no specific year.
+
+## Narratives
+- When 2+ extracted facts form a coherent story thread, add a narrative entry.
+- Keep narratives brief (1-2 sentence summary).
+
+Add a "narratives" array to your output:
+```json
+"narratives": [
+  {"title": "Growing up in Austin", "summary": "Tim spent his childhood in Austin, Texas.", "related_facts": ["Tim was born in Austin"], "era": "childhood"}
+]
+```
+
 ## Naming people — IMPORTANT
 - If a person's real first name is stated in the conversation (e.g. "my mum Janet"), use it: name="Janet", name_known=true
 - If a person is only referred to by role (e.g. "my mum", "my dad", "my brother"), use a

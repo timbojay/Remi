@@ -22,3 +22,4 @@ class BiographerState(TypedDict):
     # Flow control
     turn_count: int
     response_content: str   # Full response text after streaming
+    skip_extraction: bool   # Set by CORRECT node to prevent re-extraction of corrected data

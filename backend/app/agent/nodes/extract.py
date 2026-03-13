@@ -5,8 +5,41 @@ from app.agent.state import BiographerState
 from app.agent.prompts import EXTRACT_PROMPT
 from app.agent.tools.mutation_tools import set_conversation_id
 from app.db import knowledge_graph as kg
+from app.db import vector_store
 from app.services.llm import invoke_with_retry
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+
+
+# Era inference from age at the time of a fact
+def _infer_era(age: int) -> str:
+    if age <= 12:
+        return "childhood"
+    elif age <= 19:
+        return "teenager"
+    elif age <= 30:
+        return "young_adult"
+    elif age <= 60:
+        return "adult"
+    else:
+        return "later_life"
+
+
+async def _get_birth_year() -> int | None:
+    """Try to find the subject's birth year from existing facts."""
+    hits = await kg.search_facts("born", category="identity", limit=5)
+    for h in hits:
+        val = h.get("value", "")
+        # Look for a 4-digit year in identity/born facts
+        import re
+        year_match = re.search(r'\b(19\d{2}|20\d{2})\b', val)
+        if year_match:
+            return int(year_match.group(1))
+    # Also check date_year directly on identity facts
+    all_identity = await kg.get_all_facts(category="identity")
+    for f in all_identity:
+        if f.get("date_year") and f.get("predicate", "").lower() in ("born_in", "born_year", "birth_date"):
+            return f["date_year"]
+    return None
 
 
 async def extract(state: BiographerState) -> dict:
@@ -59,8 +92,18 @@ async def extract(state: BiographerState) -> dict:
 
     entities = data.get("entities", [])
     facts = data.get("facts", [])
+    narratives = data.get("narratives", [])
 
-    print(f"[extract] Parsed {len(entities)} entities, {len(facts)} facts")
+    print(f"[extract] Parsed {len(entities)} entities, {len(facts)} facts, {len(narratives)} narratives")
+
+    # Era enrichment: if a fact has date_year but no era, infer from birth year
+    birth_year = await _get_birth_year()
+    for fact in facts:
+        if fact.get("year") and not fact.get("era") and birth_year:
+            age = fact["year"] - birth_year
+            if age >= 0:
+                fact["era"] = _infer_era(age)
+                print(f"[extract] Inferred era={fact['era']} for year={fact['year']} (age {age})")
 
     # Create a mapping from temp entity names to real IDs
     entity_id_map: dict[str, str] = {}
@@ -81,6 +124,14 @@ async def extract(state: BiographerState) -> dict:
             entity_id_map[name.lower()] = eid
             # Increment mention count — tracks how often this person comes up
             await kg.increment_entity_mention(eid)
+
+            # Update description if new one is richer
+            new_desc = entity.get("description", "")
+            old_desc = existing[0].get("description", "")
+            if new_desc and len(new_desc) > len(old_desc) and "unknown" not in new_desc.lower():
+                await kg.update_entity(eid, description=new_desc)
+                print(f"[extract] Updated description for '{name}': {new_desc[:60]}")
+
             print(f"[extract] Entity '{name}' re-mentioned [{eid[:8]}]")
             continue
 
@@ -128,6 +179,18 @@ async def extract(state: BiographerState) -> dict:
         entity_id_map[name.lower()] = result["id"]
         print(f"[extract] Created entity: {name} (name_known={name_known}) [{result['id'][:8]}]")
 
+    # Singleton predicates where contradictions indicate a conflict (only one value should exist)
+    SINGLETON_PREDICATES = {
+        "born_in", "born_year", "birth_date", "died_in", "died_year", "death_date",
+        "lives_in", "married_to", "birth_place", "death_place",
+    }
+
+    # Predicates that auto-flag as anchor facts (life-defining events)
+    ANCHOR_PREDICATES = {
+        "born_in", "born_year", "died_in", "died_year", "married",
+        "graduated", "birth_date", "death_date", "birth_place", "death_place",
+    }
+
     # Persist facts
     for fact in facts:
         value = fact.get("value", "")
@@ -135,16 +198,26 @@ async def extract(state: BiographerState) -> dict:
         if not value:
             continue
 
-        # Check for duplicate facts
+        # Check for duplicate facts — exact match first, then semantic
         existing_facts = await kg.search_facts(value[:50])
         is_duplicate = False
         for ef in existing_facts:
             if ef["value"].lower() == value.lower():
                 is_duplicate = True
-                # Increment mention count — this fact has been confirmed again
                 await kg.increment_fact_mention(ef["id"])
-                print(f"[extract] Fact re-confirmed (mention++): {value[:60]}")
+                print(f"[extract] Fact re-confirmed (exact match, mention++): {value[:60]}")
                 break
+        if not is_duplicate:
+            # Semantic dedup — check embedding similarity
+            try:
+                similar = await vector_store.find_similar_facts(value, threshold=0.85, limit=3)
+                if similar:
+                    best = similar[0]
+                    is_duplicate = True
+                    await kg.increment_fact_mention(best["fact_id"])
+                    print(f"[extract] Fact re-confirmed (semantic {best['similarity']:.2f}, mention++): {value[:60]}")
+            except Exception as e:
+                print(f"[extract] Semantic dedup check failed: {e}")
         if is_duplicate:
             continue
 
@@ -159,19 +232,50 @@ async def extract(state: BiographerState) -> dict:
                     subject_entity_id = hits[0]["id"]
                     entity_id_map[subject_ref.lower()] = subject_entity_id
 
+        predicate = fact.get("predicate", "stated")
+        confidence = fact.get("confidence", 0.9)
+
+        # Contradiction detection for singleton predicates
+        if predicate.lower() in SINGLETON_PREDICATES:
+            contradictions = await kg.check_contradictions(
+                value, category,
+                subject_entity_id=subject_entity_id,
+                predicate=predicate,
+            )
+            if contradictions:
+                verified_conflicts = [c for c in contradictions if c.get("is_verified")]
+                if verified_conflicts:
+                    # Verified fact exists — lower confidence on new fact, don't block it
+                    confidence = 0.5
+                    print(f"[extract] CONTRADICTION with verified fact: new='{value[:50]}' vs verified='{verified_conflicts[0]['value'][:50]}' — lowering confidence")
+                else:
+                    print(f"[extract] Possible contradiction with unverified fact: new='{value[:50]}' vs existing='{contradictions[0]['value'][:50]}'")
+
+        # Auto-set is_anchor for life-defining facts
+        is_anchor = predicate.lower() in ANCHOR_PREDICATES
+        if not is_anchor and category == "milestone" and fact.get("significance", 3) >= 4:
+            is_anchor = True
+
         result = await kg.add_fact(
             value=value,
             category=category,
-            predicate=fact.get("predicate", "stated"),
+            predicate=predicate,
             subject_entity_id=subject_entity_id,
             date_year=fact.get("year"),
             date_month=fact.get("month"),
             era=fact.get("era"),
-            confidence=fact.get("confidence", 0.9),
+            confidence=confidence,
             significance=fact.get("significance", 3),
+            is_anchor=is_anchor,
             conversation_id=conversation_id,
         )
-        print(f"[extract] Created fact: {value[:60]} [{result['id'][:8]}]")
+        print(f"[extract] Created fact: {value[:60]} [{result['id'][:8]}]{' [ANCHOR]' if is_anchor else ''}")
+
+        # Index fact in vector store for future semantic dedup
+        try:
+            await vector_store.index_fact(result["id"], value)
+        except Exception as e:
+            print(f"[extract] Failed to index fact embedding: {e}")
 
     # Persist relationships
     # entity_id_map only contains entities from THIS extraction run.
@@ -217,6 +321,52 @@ async def extract(state: BiographerState) -> dict:
                 print(f"[extract] Created relationship: {from_name} --{rel_type}--> {to_name}")
         else:
             print(f"[extract] Skipped relationship {from_name}→{to_name}: could not resolve entity IDs")
+
+    # Persist narratives — story threads grouping related facts
+    for narrative in narratives:
+        title = narrative.get("title", "")
+        summary = narrative.get("summary", "")
+        if not title or not summary:
+            continue
+
+        # Resolve related_facts text to actual fact IDs
+        related_texts = narrative.get("related_facts", [])
+        fact_ids = []
+        for fact_text in related_texts:
+            hits = await kg.search_facts(fact_text[:50], limit=3)
+            for h in hits:
+                if h["value"].lower().startswith(fact_text[:30].lower()):
+                    fact_ids.append(h["id"])
+                    break
+
+        await kg.add_narrative(
+            title=title,
+            summary=summary,
+            fact_ids=fact_ids,
+            era=narrative.get("era"),
+            conversation_id=conversation_id,
+        )
+        print(f"[extract] Created narrative: {title}")
+
+    # Check if new facts answer existing questions
+    try:
+        from app.db.knowledge_graph import get_top_questions, mark_question_answered
+        top_questions = await get_top_questions(limit=10)
+        for q in top_questions:
+            # If we extracted facts in the same category, mark as answered
+            for fact in facts:
+                if fact.get("category") == q.get("category"):
+                    await mark_question_answered(q["id"])
+                    print(f"[extract] Question answered: {q['question_text'][:50]}")
+                    break
+    except Exception as e:
+        print(f"[extract] Question check error: {e}")
+
+    # Index new facts in vector store for semantic dedup
+    try:
+        all_new_facts = await kg.search_facts("", limit=5)  # recent facts
+    except Exception:
+        pass
 
     return {}
 
