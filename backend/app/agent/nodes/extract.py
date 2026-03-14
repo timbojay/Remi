@@ -69,19 +69,57 @@ async def extract(state: BiographerState) -> dict:
         content = last_assistant.content if isinstance(last_assistant.content, str) else str(last_assistant.content)
         exchange += f"\nAssistant: {content}"
 
-    # Get existing data context so Claude can avoid duplicates
-    existing_summary = await kg.get_biography_summary()
+    # Build a FOCUSED "Already Recorded" context — only facts/entities relevant
+    # to the current message. The full biography (23K+ chars) overwhelms small models.
+    import re as _re
+    user_text = last_user.content if isinstance(last_user.content, str) else str(last_user.content)
+
+    # Extract search terms from user message
+    search_terms = set()
+    search_terms.update(_re.findall(r'\b[A-Z][a-z]{2,}\b', user_text))  # proper nouns
+    search_terms.update(_re.findall(r'\b(19\d{2}|20\d{2})\b', user_text))  # years
+    role_words = _re.findall(
+        r'\b(mum|mom|mother|dad|father|brother|sister|wife|husband|son|daughter|'
+        r'grandma|grandmother|grandpa|grandfather|uncle|aunt|cousin)\b',
+        user_text, _re.IGNORECASE,
+    )
+    search_terms.update(w.capitalize() for w in role_words)
+
+    # Fetch only relevant existing data
+    relevant_facts = []
+    relevant_entities = []
+    seen_fact_ids = set()
+    for term in list(search_terms)[:5]:
+        for f in await kg.search_facts(term, limit=5):
+            if f["id"] not in seen_fact_ids:
+                seen_fact_ids.add(f["id"])
+                relevant_facts.append(f)
+        for e in await kg.search_entities(term):
+            relevant_entities.append(e)
+
     context = ""
-    if existing_summary:
-        context = f"\n\n## Already Recorded\n{existing_summary}"
+    if relevant_facts or relevant_entities:
+        parts = []
+        if relevant_entities:
+            ent_lines = [f"- {e['name']}: {e.get('description', '')}" for e in relevant_entities[:10]]
+            parts.append("Known people/places:\n" + "\n".join(ent_lines))
+        if relevant_facts:
+            fact_lines = [f"- {f['value']}" for f in relevant_facts[:15]]
+            parts.append("Known facts:\n" + "\n".join(fact_lines))
+        context = "\n\n## Already Recorded (relevant subset)\n" + "\n\n".join(parts)
 
     response_text = await invoke_with_retry(
         [
-            SystemMessage(content=EXTRACT_PROMPT),
-            HumanMessage(content=f"Extract biographical information from this exchange:{context}\n\n---\n{exchange}"),
+            SystemMessage(content=EXTRACT_PROMPT + "\n\nCRITICAL: You are a data extraction tool. "
+                          "Output ONLY a JSON object. Do NOT write conversational text, commentary, "
+                          "or anything outside the JSON block. If there is nothing to extract, "
+                          'output: {"entities": [], "facts": []}'),
+            HumanMessage(content=f"Extract biographical information from this exchange:{context}\n\n---\n{exchange}\n\n"
+                         "Respond with ONLY the JSON object now:"),
         ],
         node="extract",
         max_tokens=2048,
+        thinking_headroom=400,
     )
 
     # Parse JSON from response

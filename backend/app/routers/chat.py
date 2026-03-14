@@ -44,21 +44,22 @@ _HALLUCINATION_RE = re.compile(
 )
 
 _RETRY_SUFFIX = (
-    "\n\nREMINDER: Reply in 1-2 sentences maximum, then ask exactly ONE question. "
-    "Do not invent or assume anything not listed above. Be brief and direct."
+    "\n\nREMINDER: Keep your reply concise (2-4 sentences + a follow-up question). "
+    "Do not invent, assume, or guess anything not listed under What You Already Know. "
+    "Be warm, direct, and genuine."
 )
 
 
 def _validate_response(text: str) -> tuple[bool, str]:
     """Returns (is_valid, reason_if_invalid)."""
     if not text or len(text.split()) < 4:
-        return False, f"response too short or empty"
+        return False, "response too short or empty"
     if _HALLUCINATION_RE.search(text):
         return False, "hallucination phrase detected"
     word_count = len(text.split())
-    if word_count > 80:
+    if word_count > 200:
         return False, f"too long ({word_count} words)"
-    if text.count("?") > 2:
+    if text.count("?") > 3:
         return False, f"too many questions ({text.count('?')})"
     return True, ""
 
@@ -164,14 +165,14 @@ async def chat_stream(request: ChatRequest):
 
     async def generate():
         # -- RESPOND: generate full response, validate, retry once if needed --
-        llm = get_streaming_llm(max_tokens=200)
+        llm = get_streaming_llm(max_tokens=500)
         messages_for_llm = [SystemMessage(content=system_prompt)] + llm_messages
 
         # First attempt — non-streaming so we can validate before sending
         full_response = await invoke_with_retry(
             messages_for_llm,
             node="respond",
-            max_tokens=200,
+            max_tokens=500,
         )
         t4 = time.time()
         print(f"[timing] RESPOND attempt 1: {t4-t3:.2f}s")
@@ -185,7 +186,7 @@ async def chat_stream(request: ChatRequest):
             full_response = await invoke_with_retry(
                 retry_messages,
                 node="respond-retry",
-                max_tokens=150,
+                max_tokens=400,
             )
             t4b = time.time()
             print(f"[timing] RESPOND retry: {t4b-t4:.2f}s")

@@ -79,11 +79,12 @@ async def correct(state: BiographerState) -> dict:
 
     result_text = await invoke_with_retry(
         [
-            SystemMessage(content=CORRECT_PROMPT),
-            HumanMessage(content=context),
+            SystemMessage(content=CORRECT_PROMPT + "\n\nRespond with ONLY the JSON object. No other text."),
+            HumanMessage(content=context + "\n\nOutput ONLY the JSON corrections now:"),
         ],
         node="correct",
         max_tokens=1024,
+        thinking_headroom=400,
     )
 
     data = _parse_json(result_text)

@@ -15,9 +15,12 @@ def _strip_thinking(text: str) -> str:
 
     Some Ollama models output their chain-of-thought inside <think> tags before
     the actual response. We strip them so downstream code only sees the answer.
+    Also removes CJK characters that qwen3 occasionally leaks mid-response.
     """
     # Remove <think>...</think> blocks (greedy=False so we don't eat real content)
     stripped = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
+    # Remove stray CJK characters that qwen3 sometimes emits
+    stripped = re.sub(r'[\u4e00-\u9fff\u3400-\u4dbf\u3000-\u303f]+', '', stripped)
     return stripped.strip()
 
 
@@ -58,19 +61,22 @@ async def invoke_with_retry(
     max_tokens: int = 1024,
     max_retries: int = 3,
     base_delay: float = 1.0,
+    thinking_headroom: int = 800,
 ) -> str:
     """Invoke Ollama LLM with automatic retry on transient errors.
 
     Returns the response text.
+
+    Args:
+        thinking_headroom: Extra tokens reserved for qwen3 <think> blocks.
+            Use 800 for free-form responses (respond, greet).
+            Use 400 for structured JSON output (extract, strategize, correct).
     """
     llm = ChatOllama(
         model=settings.MODEL_NAME,
         base_url=settings.OLLAMA_BASE_URL,
-        num_predict=max_tokens,
-        # Disable thinking mode for qwen3 and other reasoning models.
-        # Must be a top-level kwarg, NOT inside options={} — Ollama treats
-        # them differently and options={"think":False} is silently ignored.
-        think=False,
+        num_predict=max_tokens + thinking_headroom,
+        think=False,  # hint (unreliable on qwen3, _strip_thinking is safety net)
     )
 
     last_error = None
@@ -109,9 +115,10 @@ async def invoke_with_retry(
 
 def get_streaming_llm(**kwargs) -> ChatOllama:
     """Get a streaming LLM instance for the RESPOND node."""
+    max_tokens = kwargs.get("max_tokens", 1024)
     return ChatOllama(
         model=settings.MODEL_NAME,
         base_url=settings.OLLAMA_BASE_URL,
-        num_predict=kwargs.get("max_tokens", 1024),
+        num_predict=max_tokens + 800,  # headroom for qwen3 <think> blocks
         think=False,
     )

@@ -1,7 +1,7 @@
 from app.agent.state import BiographerState
 from app.agent.prompts import build_system_prompt
 from app.config import settings
-from langchain_ollama import ChatOllama
+from app.services.llm import invoke_with_retry
 from langchain_core.messages import SystemMessage
 
 
@@ -15,17 +15,11 @@ async def respond(state: BiographerState) -> dict:
     user_name = state.get("user_name", settings.USER_NAME)
     system_prompt = build_system_prompt(user_name)
 
-    llm = ChatOllama(
-        model=settings.MODEL_NAME,
-        base_url=settings.OLLAMA_BASE_URL,
-        num_predict=1024,
-        options={"think": False},
-    )
-
     messages = [SystemMessage(content=system_prompt)] + state["messages"]
-    response = await llm.ainvoke(messages)
+    content = await invoke_with_retry(messages, node="respond-fallback", max_tokens=500)
 
+    from langchain_core.messages import AIMessage
     return {
-        "messages": [response],
-        "response_content": response.content,
+        "messages": [AIMessage(content=content)],
+        "response_content": content,
     }
